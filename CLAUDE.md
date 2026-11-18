@@ -173,3 +173,6 @@ Rules:
   Laravel conventions. If anything conflicts with this file on scope, architecture,
   security, or currency rules, THIS file wins.
 - Commit messages follow Conventional Commits (feat:, fix:, test:, chore:, docs:)
+- `backend/docs/business-rules.md` records the business rules decided during development
+  (expense status derivation, payments, rate snapshots, rounding, deletion). Read it before
+  changing money, currency or expense logic, and update it when a rule changes.
