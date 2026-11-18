@@ -69,6 +69,59 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
 - **Cancelled expenses**: their payments still count as paid (forfeited deposit), but
   outstanding = 0, and they are excluded from upcoming payments and commitments on the dashboard.
 
+## Dashboard
+
+Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{wedding}/dashboard`).
+
+- All totals are in the wedding's base currency and are SQL `SUM`s of the stored `base_*`
+  snapshots, never re-converted. Soft-deleted revenues and expenses (and payments of soft-deleted
+  expenses) are excluded everywhere.
+- A fixed number of queries (5), whatever the number of records; no record rows are loaded
+  except the upcoming-payments list itself.
+- **Cancelled expenses** count only what was paid on them (forfeited deposit): their estimated,
+  actual and committed figures equal their paid amount, and the rest of their balance is dropped.
+  They never appear in upcoming payments.
+- **Committed** = `actual_amount`, or `estimated_amount` until the actual is known
+  (cancelled: paid amount).
+
+| Figure | Definition |
+|---|---|
+| Revenue expected / received / total | SUM `base_amount` by status; total = expected + received |
+| Expenses estimated / actual / paid / committed | SUM of the base columns, cancelled rule above; paid includes overpayments as paid |
+| Remaining budget | `budget_target` − actual expenses (may be negative) |
+| Net cash position | received revenue − paid expenses |
+| Funding gap ("if all pledges arrive") | committed expenses − (expected + received revenue). Positive = money still missing, negative = surplus |
+| Secured gap ("money received only") | committed expenses − received revenue; pledges not yet received are ignored. Positive = money still missing, negative = surplus |
+| Unallocated budget | `budget_target` − SUM of expense categories' `planned_amount` (may be negative) |
+
+- **Per-currency breakdown**: the same revenue and expense figures per original currency, with
+  their base equivalent. Every supported currency is listed, with zeros when unused.
+- **Budget vs actual per expense category**: planned, estimated, actual, paid and committed.
+  `used_percent` = committed / planned (2 decimals, `null` without a plan). **Health** compares
+  committed with planned: green < 90%, amber 90–100% (both inclusive), red > 100%; no plan → no
+  health; a plan of 0 is red as soon as anything is committed.
+- **Expense breakdown**: committed per category (categories with nothing committed omitted),
+  with a share rounded per slice to 2 decimals (shares may add up to 99.99–100.01).
+- **Monthly cash flow**: inflow = received revenue by `received_date`; outflow = payments by
+  `paid_date` at their own rate snapshot (payments on cancelled expenses included). Months
+  between the first and last movement are filled with zeros; `cumulative` ends at the net cash
+  position.
+- **Upcoming payments**: expenses not cancelled, `due_date` from today to today + 30 days
+  (inclusive), with an outstanding balance > 0; sorted by `due_date`. Outstanding is in the
+  expense currency, `basis` `estimated` while `actual_amount` is null. Overdue balances are not
+  part of this list.
+- **"Today"** is the calendar date in `Asia/Vientiane`, whatever the server time zone.
+
+## CSV export
+
+- `GET /api/v1/weddings/{wedding}/exports/revenues` and `/exports/expenses`: policy-checked like
+  every wedding endpoint, limited to 10 per minute per user, soft-deleted records excluded.
+- Streamed in chunks, UTF-8 with a BOM (Excel shows Lao text correctly), CRLF line endings.
+- Each row has the original amount, currency, snapshotted rate and base amount(s); expenses also
+  carry paid and outstanding amounts with the outstanding basis.
+- Formula injection: a cell starting with `=`, `+`, `-`, `@`, tab or carriage return is prefixed
+  with `'`. Amounts are never negative, so numbers are not affected.
+
 ## Categories and deletion
 
 - Default category names live in `App\Enums\CategoryType::defaultNames()` and are copied into

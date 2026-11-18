@@ -4,10 +4,12 @@ use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
 use App\Http\Controllers\Api\V1\Auth\RegisterController;
 use App\Http\Controllers\Api\V1\Auth\SessionController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\ExchangeRateController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\ExpensePaymentController;
 use App\Http\Controllers\Api\V1\ExpensePaymentReceiptController;
+use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\ReceiptDownloadController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\WeddingController;
@@ -42,6 +44,18 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
     Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
         Route::apiResource('weddings', WeddingController::class);
+
+        Route::get('weddings/{wedding}/dashboard', DashboardController::class)->name('weddings.dashboard');
+
+        // Exports scan every record of a wedding, so they get their own, tighter limit.
+        Route::controller(ExportController::class)
+            ->prefix('weddings/{wedding}/exports')
+            ->name('weddings.exports.')
+            ->middleware('throttle:exports')
+            ->group(function () {
+                Route::get('revenues', 'revenues')->name('revenues');
+                Route::get('expenses', 'expenses')->name('expenses');
+            });
 
         Route::scopeBindings()->group(function () {
             Route::apiResource('weddings.categories', CategoryController::class)->except('show');

@@ -72,5 +72,8 @@ class AppServiceProvider extends ServiceProvider
             : Limit::perMinute(60)->by('writes:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
 
         RateLimiter::for('receipts', fn (Request $request): Limit => Limit::perMinute(30)->by('receipts:'.$request->ip()));
+
+        // Each export streams every record of a wedding; a few per minute covers real use.
+        RateLimiter::for('exports', fn (Request $request): Limit => Limit::perMinute(10)->by('exports:'.$request->user()?->getAuthIdentifier()));
     }
 }
