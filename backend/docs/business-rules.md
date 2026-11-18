@@ -93,8 +93,10 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
   minute per user; reads are not limited.
 - Receipts (JPEG, PNG, WebP or PDF, max 5 MB, MIME type sniffed from the content) live on the
   private `receipts` disk. They are reachable only through a signed URL valid for 2 minutes,
-  issued after the payment policy check, served inline with a sanitized file name,
-  `Cache-Control: private, no-store`, `nosniff` and `Referrer-Policy: no-referrer`. Signed URLs
+  issued after the payment policy check, with a sanitized file name,
+  `Cache-Control: private, no-store`, `nosniff` and `Referrer-Policy: no-referrer`. Images are
+  shown inline under a strict sandbox CSP; PDFs are sent as `Content-Disposition: attachment`
+  (downloaded, never rendered on the API origin). Signed URLs
   are never logged. The local disk's `storage/{path}` route is disabled.
 - Amounts are JSON strings with their currency (`{"amount": "1500.00", "currency": "USD"}`);
   records expose both original and base amounts. `outstanding_amount.basis` is `estimated`

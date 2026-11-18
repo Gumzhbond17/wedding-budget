@@ -138,7 +138,7 @@ describe('receipts', function () {
         $this->get($url)->assertForbidden();
     });
 
-    it('sends a safe inline file name whatever the client named the file', function (string $original, string $mime, string $disposition) {
+    it('sends a safe file name whatever the client named the file', function (string $original, string $mime, string $disposition) {
         [$user, $wedding, $expense] = usdExpenseOwner();
         $payment = ExpensePayment::factory()->for($expense)->create(['amount' => '100.00']);
         Storage::disk('receipts')->put('payments/r', 'content');
@@ -151,10 +151,45 @@ describe('receipts', function () {
         $this->get($url)->assertOk()->assertHeader('Content-Disposition', $disposition);
     })->with([
         'path, quotes, CR/LF and percent' => ["../evil\"\r\n%name.png", 'image/png', 'inline; filename=evilname.png'],
-        'wrong extension follows the real type' => ['invoice.exe', 'application/pdf', 'inline; filename=invoice.pdf'],
+        'wrong extension follows the real type' => ['invoice.exe', 'application/pdf', 'attachment; filename=invoice.pdf'],
         'nothing usable left' => ['"%/\\.png', 'image/webp', 'inline; filename=receipt.webp'],
         'Lao name keeps its marks, ASCII fallback' => ['ໃບຮັບເງິນ.jpg', 'image/jpeg', "inline; filename=receipt.jpg; filename*=utf-8''".rawurlencode('ໃບຮັບເງິນ.jpg')],
     ]);
+
+    it('shows images inline but downloads PDFs', function (string $mime, string $disposition) {
+        [$user, $wedding, $expense] = usdExpenseOwner();
+        $payment = ExpensePayment::factory()->for($expense)->create(['amount' => '100.00']);
+        Storage::disk('receipts')->put('payments/r', 'content');
+        $payment->forceFill(['receipt_path' => 'payments/r', 'receipt_original_name' => 'bill', 'receipt_mime_type' => $mime, 'receipt_size' => 7])->save();
+
+        $url = $this->actingAs($user)
+            ->getJson(route('v1.weddings.expenses.payments.receipt.show', [$wedding, $expense, $payment]))
+            ->json('data.url');
+
+        $this->get($url)->assertOk()
+            ->assertHeader('Content-Type', $mime)
+            ->assertHeader('Content-Disposition', $disposition)
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    })->with([
+        'JPEG' => ['image/jpeg', 'inline; filename=bill.jpg'],
+        'PNG' => ['image/png', 'inline; filename=bill.png'],
+        'WebP' => ['image/webp', 'inline; filename=bill.webp'],
+        'PDF' => ['application/pdf', 'attachment; filename=bill.pdf'],
+    ]);
+
+    it('uploads a real PDF and serves it as a download', function () {
+        [$user, $wedding, $expense] = usdExpenseOwner();
+        $payment = ExpensePayment::factory()->for($expense)->create(['amount' => '100.00']);
+
+        $this->actingAs($user)->post(route('v1.weddings.expenses.payments.receipt.store', [$wedding, $expense, $payment]), [
+            'receipt' => uploadWithContent('invoice.pdf', "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.receipt.mime_type', 'application/pdf');
+
+        $url = $this->getJson(route('v1.weddings.expenses.payments.receipt.show', [$wedding, $expense, $payment]))->json('data.url');
+
+        $this->get($url)->assertOk()->assertHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
+    });
 
     it('never writes signed receipt URLs to the logs', function () {
         [$user, $wedding, $expense] = usdExpenseOwner();

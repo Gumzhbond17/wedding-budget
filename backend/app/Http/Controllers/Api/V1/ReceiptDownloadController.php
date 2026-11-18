@@ -42,7 +42,7 @@ class ReceiptDownloadController extends Controller
         return $disk->response($payment->receipt_path, headers: [
             // MIME type detected from the content at upload, never the client's claim.
             'Content-Type' => $payment->receipt_mime_type,
-            'Content-Disposition' => $this->inlineDisposition($payment),
+            'Content-Disposition' => $this->disposition($payment),
             'X-Content-Type-Options' => 'nosniff',
             // The file never runs scripts or loads anything, even if a viewer would allow it.
             'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; sandbox",
@@ -53,12 +53,17 @@ class ReceiptDownloadController extends Controller
     }
 
     /**
-     * Inline disposition with a sanitized name. The client's original name is user input: control
-     * characters, quotes, slashes or "%" could break the header or Symfony's validation (a 500),
-     * so only letters (with combining marks, e.g. Lao vowels), digits, spaces and ". _ - ( )" are
-     * kept, with an ASCII fallback for old clients.
+     * Images are shown inline under the strict CSP above. PDFs are downloaded instead: browser
+     * PDF viewers are full document renderers (forms, scripts, links) and some refuse to run
+     * under a sandbox CSP, so the file is handed to the user's own viewer rather than rendered
+     * on the API origin.
+     *
+     * The client's original name is user input: control characters, quotes, slashes or "%"
+     * could break the header or Symfony's validation (a 500), so only letters (with combining
+     * marks, e.g. Lao vowels), digits, spaces and ". _ - ( )" are kept, with an ASCII fallback
+     * for old clients.
      */
-    private function inlineDisposition(ExpensePayment $payment): string
+    private function disposition(ExpensePayment $payment): string
     {
         $extension = self::EXTENSIONS[$payment->receipt_mime_type] ?? 'bin';
 
@@ -73,7 +78,9 @@ class ReceiptDownloadController extends Controller
         $ascii = Str::of(Str::ascii($name))->replaceMatches('/[^A-Za-z0-9 ._()-]+/', '')->value();
 
         return HeaderUtils::makeDisposition(
-            HeaderUtils::DISPOSITION_INLINE,
+            $payment->receipt_mime_type === 'application/pdf'
+                ? HeaderUtils::DISPOSITION_ATTACHMENT
+                : HeaderUtils::DISPOSITION_INLINE,
             $name,
             $ascii === '.'.$extension ? "receipt.{$extension}" : $ascii,
         );
