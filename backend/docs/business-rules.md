@@ -30,9 +30,11 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
 
 | Record | Transaction date | New snapshot when | Amount-only edits |
 |---|---|---|---|
-| Revenue | `received_date`, else `expected_date`, else the save date | currency or that date changes | reuse the stored rate |
+| Revenue | `received_date`, else `expected_date`, else the save date | currency or that date changes (incl. expected → received) | reuse the stored rate |
 | Expense (estimated / actual) | save date (creation day) | currency changes | reuse the stored rate, incl. setting `actual_amount` |
 | Expense payment | `paid_date` | `paid_date` changes | reuse the stored rate |
+
+- A `received` revenue requires `received_date`.
 
 ## Rounding
 
@@ -72,6 +74,9 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
 - Default category names live in `App\Enums\CategoryType::defaultNames()` and are copied into
   each wedding when it is created; each wedding owns and can edit its copies.
 - `planned_amount` (base currency) is for expense categories only.
+- A record's `category_id` must belong to the same wedding and match the record type
+  (revenue or expense). The write actions check this (422 on `category_id`, one message for
+  every failure so foreign ids are never confirmed); a composite FK backs the same-wedding part.
 - Deleting a category that still has revenues or expenses (soft-deleted included) fails with
   409 `category_in_use`; financial records are never deleted with it.
 - Deleting a wedding goes through `App\Actions\Weddings\DeleteWedding`, which removes

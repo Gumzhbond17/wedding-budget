@@ -2,12 +2,16 @@
 
 namespace App\Actions\Revenues;
 
+use App\Actions\Categories\EnsureCategoryMatches;
+use App\Enums\CategoryType;
+use App\Enums\RevenueStatus;
 use App\Exceptions\MissingExchangeRateException;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use App\Services\CurrencyConversionService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Creates, updates and deletes revenue with its rate snapshot (docs/business-rules.md):
@@ -17,17 +21,22 @@ use Illuminate\Support\Facades\DB;
  */
 final class ManageRevenue
 {
-    public function __construct(private readonly CurrencyConversionService $conversion) {}
+    public function __construct(
+        private readonly CurrencyConversionService $conversion,
+        private readonly EnsureCategoryMatches $ensureCategory,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  validated input; never exchange_rate or base_amount
      *
+     * @throws ValidationException
      * @throws MissingExchangeRateException
      */
     public function create(Wedding $wedding, array $data): Revenue
     {
         return DB::transaction(function () use ($wedding, $data): Revenue {
             $wedding = $this->lockWedding($wedding->getKey());
+            $this->ensureCategory->handle($wedding, $data['category_id'] ?? null, CategoryType::Revenue);
 
             $revenue = $wedding->revenues()->make($data);
             $revenue->setRelation('wedding', $wedding);
@@ -36,6 +45,7 @@ final class ManageRevenue
                 $revenue->currency = $wedding->base_currency;
             }
 
+            $this->ensureReceivedDate($revenue);
             $this->snapshot($wedding, $revenue);
             $revenue->save();
 
@@ -44,8 +54,12 @@ final class ManageRevenue
     }
 
     /**
+     * Marking an expected revenue as received moves its transaction date to received_date,
+     * so it is re-snapshotted at the rate of the day the money actually arrived.
+     *
      * @param  array<string, mixed>  $data  validated input; never exchange_rate or base_amount
      *
+     * @throws ValidationException
      * @throws MissingExchangeRateException
      */
     public function update(Revenue $revenue, array $data): Revenue
@@ -55,8 +69,13 @@ final class ManageRevenue
             $revenue = Revenue::query()->lockForUpdate()->findOrFail($revenue->getKey());
             $revenue->setRelation('wedding', $wedding);
 
+            if (array_key_exists('category_id', $data)) {
+                $this->ensureCategory->handle($wedding, $data['category_id'], CategoryType::Revenue);
+            }
+
             $dateBefore = $this->transactionDate($revenue)->toDateString();
             $revenue->fill($data);
+            $this->ensureReceivedDate($revenue);
 
             if ($revenue->isDirty('currency') || $this->transactionDate($revenue)->toDateString() !== $dateBefore) {
                 $this->snapshot($wedding, $revenue);
@@ -85,6 +104,20 @@ final class ManageRevenue
     private function lockWedding(int $weddingId): Wedding
     {
         return Wedding::query()->sharedLock()->findOrFail($weddingId);
+    }
+
+    /**
+     * A received revenue needs the date it arrived: that date picks its rate snapshot.
+     *
+     * @throws ValidationException
+     */
+    private function ensureReceivedDate(Revenue $revenue): void
+    {
+        if ($revenue->status === RevenueStatus::Received && $revenue->received_date === null) {
+            throw ValidationException::withMessages([
+                'received_date' => 'A received revenue needs the date it was received.',
+            ]);
+        }
     }
 
     private function transactionDate(Revenue $revenue): CarbonInterface

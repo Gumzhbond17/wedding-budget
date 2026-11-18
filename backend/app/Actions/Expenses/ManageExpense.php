@@ -2,6 +2,8 @@
 
 namespace App\Actions\Expenses;
 
+use App\Actions\Categories\EnsureCategoryMatches;
+use App\Enums\CategoryType;
 use App\Enums\ExpenseStatus;
 use App\Exceptions\MissingExchangeRateException;
 use App\Models\Expense;
@@ -23,7 +25,10 @@ use function Illuminate\Support\enum_value;
  */
 final class ManageExpense
 {
-    public function __construct(private readonly CurrencyConversionService $conversion) {}
+    public function __construct(
+        private readonly CurrencyConversionService $conversion,
+        private readonly EnsureCategoryMatches $ensureCategory,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  validated input; never exchange_rate, base_* or paid amounts
@@ -37,6 +42,7 @@ final class ManageExpense
 
         return DB::transaction(function () use ($wedding, $data): Expense {
             $wedding = $this->lockWedding($wedding->getKey());
+            $this->ensureCategory->handle($wedding, $data['category_id'] ?? null, CategoryType::Expense);
 
             $expense = $wedding->expenses()->make($data);
             $expense->setRelation('wedding', $wedding);
@@ -66,6 +72,10 @@ final class ManageExpense
             $wedding = $this->lockWedding($expense->wedding_id);
             $expense = Expense::query()->lockForUpdate()->findOrFail($expense->getKey());
             $expense->setRelation('wedding', $wedding);
+
+            if (array_key_exists('category_id', $data)) {
+                $this->ensureCategory->handle($wedding, $data['category_id'], CategoryType::Expense);
+            }
 
             $expense->fill($data);
 

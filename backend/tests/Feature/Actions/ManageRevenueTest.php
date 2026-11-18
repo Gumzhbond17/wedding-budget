@@ -2,11 +2,13 @@
 
 use App\Actions\Revenues\ManageRevenue;
 use App\Enums\Currency;
+use App\Enums\RevenueStatus;
 use App\Exceptions\MissingExchangeRateException;
 use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Revenue;
 use App\Models\Wedding;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A LAK wedding with USD rates effective 2026-08-01 (21,650) and 2026-10-01 (21,850).
@@ -95,3 +97,23 @@ it('takes a new snapshot when the transaction date or currency changes', functio
     'expected date moved' => [['expected_date' => '2026-11-01'], '21850.00000000', '21850000.00'],
     'currency changed' => [['currency' => 'THB', 'amount' => '25000.00', 'expected_date' => '2026-10-15'], '628.40000000', '15710000.00'],
 ]);
+
+it('re-snapshots at received_date when an expected revenue is received', function () {
+    $wedding = weddingWithUsdRates();
+    $revenue = createRevenue($wedding, ['expected_date' => '2026-08-15']);
+    expect($revenue->refresh()->exchange_rate)->toBe('21650.00000000');
+
+    app(ManageRevenue::class)->update($revenue, ['status' => 'received', 'received_date' => '2026-10-20']);
+
+    expect($revenue->refresh())
+        ->status->toBe(RevenueStatus::Received)
+        ->exchange_rate->toBe('21850.00000000')
+        ->base_amount->toBe('21850000.00');
+});
+
+it('requires a received date for received revenue', function () {
+    $revenue = createRevenue(weddingWithUsdRates(), ['expected_date' => '2026-08-15']);
+
+    expect(fn () => app(ManageRevenue::class)->update($revenue, ['status' => 'received']))
+        ->toThrow(ValidationException::class, 'A received revenue needs the date it was received.');
+});
