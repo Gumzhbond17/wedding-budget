@@ -55,6 +55,20 @@ export const useWeddingsStore = defineStore('weddings', () => {
     }
   }
 
+  /** Re-reads one wedding (its budget or currency may have changed) and updates the list. */
+  async function fetchOne(id: number): Promise<Wedding> {
+    const { data } = await api.get<ResourceResponse<Wedding>>(`/weddings/${id}`)
+    const index = weddings.value.findIndex(wedding => wedding.id === id)
+
+    if (index === -1) {
+      weddings.value.push(data)
+    } else {
+      weddings.value[index] = data
+    }
+
+    return data
+  }
+
   async function create(input: WeddingInput): Promise<Wedding> {
     const response = await api.post<ResourceResponse<Wedding>>('/weddings', input)
     // Re-read the list so it keeps the API's order (next wedding date first).
@@ -73,5 +87,5 @@ export const useWeddingsStore = defineStore('weddings', () => {
     currentId.value = null
   }
 
-  return { weddings, loaded, currentId, current, baseCurrency, fetchAll, ensureLoaded, create, select, $reset }
+  return { weddings, loaded, currentId, current, baseCurrency, fetchAll, fetchOne, ensureLoaded, create, select, $reset }
 })

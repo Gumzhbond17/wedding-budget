@@ -1,4 +1,4 @@
-import type { CurrencyCode, DecimalString, Money } from '~/types/api'
+import type { CurrencyCode, DecimalString, Money, RateString } from '~/types/api'
 
 /**
  * Mirrors the backend Currency enum (symbol, display decimals, locale). LAK has no minor
@@ -74,6 +74,25 @@ export function formatMoney(amount: DecimalString, currency: CurrencyCode): stri
       }
     })
     .join('')
+}
+
+/**
+ * An exchange rate (DECIMAL(20,8) string, units of `base` per 1 foreign unit) in the base
+ * currency's notation, without trailing zeros: "21850.00000000" LAK → "₭21.850",
+ * "628.40000000" LAK → "₭628,4", "0.00004577" USD → "$0.00004577". String operations only,
+ * so all 8 decimals survive.
+ */
+export function formatRate(rate: RateString, base: CurrencyCode): string {
+  if (!/^\d+(\.\d+)?$/.test(rate)) {
+    throw new TypeError(`Not a rate: "${rate}"`)
+  }
+
+  const { symbol, group, decimal } = CURRENCIES[base]
+  const [rawInteger = '0', rawFraction = ''] = rate.split('.')
+  const integer = rawInteger.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, group)
+  const fraction = rawFraction.replace(/0+$/, '')
+
+  return symbol + integer + (fraction === '' ? '' : decimal + fraction)
 }
 
 export function formatMoneyObject(money: Money): string {

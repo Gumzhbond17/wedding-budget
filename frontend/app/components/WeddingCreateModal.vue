@@ -10,24 +10,31 @@ const { t } = useI18n()
 const weddings = useWeddingsStore()
 const { options: currencyOptions } = useCurrency()
 
-// Amount as typed, kept a string end to end. Same pattern as the API's Money rule.
-const AMOUNT = /^\d{1,18}(\.\d{1,2})?$/
+interface WeddingFormState {
+  name: string
+  wedding_date: string
+  base_currency: CurrencyCode
+  budget_target: string
+  notes: string
+}
 
+function initialState(): WeddingFormState {
+  return { name: '', wedding_date: '', base_currency: DEFAULT_CURRENCY, budget_target: '', notes: '' }
+}
+
+// Declared before the schema, which reads the chosen currency.
+const state = reactive<WeddingFormState>(initialState())
+
+// The budget target is in the base currency, so its decimals follow it (whole kip for LAK).
 const schema = computed(() => z.object({
   name: z.string().trim().min(1, t('validation.required')).max(150, t('validation.max', { max: 150 })),
   wedding_date: z.string(),
   base_currency: z.enum(['LAK', 'USD', 'THB']),
-  budget_target: z.string().trim().regex(AMOUNT, t('validation.money')).or(z.literal('')),
+  budget_target: z.string().regex(amountPattern(state.base_currency), t('validation.money')).or(z.literal('')),
   notes: z.string().max(5000, t('validation.max', { max: 5000 }))
 }))
 
 type Schema = z.output<typeof schema.value>
-
-function initialState(): Schema {
-  return { name: '', wedding_date: '', base_currency: DEFAULT_CURRENCY, budget_target: '', notes: '' }
-}
-
-const state = reactive<Schema>(initialState())
 const form = useTemplateRef('form')
 const submitting = ref(false)
 
@@ -116,16 +123,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
           :label="$t('weddings.form.budgetTarget')"
           name="budget_target"
         >
-          <UInput
+          <MoneyInput
             v-model="state.budget_target"
-            inputmode="decimal"
-            placeholder="0"
-            class="w-full"
-          >
-            <template #trailing>
-              <span class="text-sm text-muted">{{ state.base_currency }}</span>
-            </template>
-          </UInput>
+            :currency="state.base_currency"
+            :currency-editable="false"
+          />
         </UFormField>
 
         <UFormField

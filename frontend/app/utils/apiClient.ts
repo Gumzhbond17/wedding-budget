@@ -38,6 +38,11 @@ export interface RequestOptions {
    * A 401 is an expected answer (e.g. "who is logged in?"): throw it without redirecting.
    */
   allowUnauthenticated?: boolean
+  /**
+   * Statuses the caller shows itself (e.g. 409 "category in use" inside a dialog): thrown
+   * as ApiError without the toast, so the user does not see the same error twice.
+   */
+  expectedStatuses?: number[]
 }
 
 export interface ApiClientOptions {
@@ -178,6 +183,10 @@ export function createApiClient(options: ApiClientOptions) {
         await options.onUnauthenticated()
       }
 
+      throw error
+    }
+
+    if (status !== null && request.expectedStatuses?.includes(status)) {
       throw error
     }
 

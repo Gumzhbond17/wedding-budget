@@ -229,6 +229,27 @@ describe('other failures', () => {
     expect(onUnauthenticated).not.toHaveBeenCalled()
   })
 
+  it('leaves an expected status to the caller, without a toast', async () => {
+    const { api, onError } = setup(() => {
+      throw httpError(409, { message: 'In use.', code: 'category_in_use' })
+    })
+
+    const error = await api.delete('/weddings/1/categories/2', { expectedStatuses: [409] }).catch((caught: unknown) => caught)
+
+    expect(error).toMatchObject({ status: 409, data: { code: 'category_in_use' } })
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('still reports statuses the caller did not expect', async () => {
+    const { api, onError } = setup(() => {
+      throw httpError(500)
+    })
+
+    await expect(api.delete('/weddings/1/categories/2', { expectedStatuses: [409] })).rejects.toBeInstanceOf(ApiError)
+
+    expect(onError).toHaveBeenCalledTimes(1)
+  })
+
   it('reports a network failure with no status', async () => {
     const { api, onError } = setup(() => {
       throw new TypeError('Failed to fetch')

@@ -4,14 +4,18 @@
     "tagline": "Plan your wedding budget in kip, dollars and baht."
   },
   "common": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save"
   },
   "nav": {
     "account": "Account",
     "allWeddings": "All weddings",
+    "dashboard": "Dashboard",
     "language": "Language",
     "logout": "Log out",
-    "selectWedding": "Select a wedding"
+    "selectWedding": "Select a wedding",
+    "settings": "Settings"
   },
   "auth": {
     "fields": {
@@ -39,7 +43,7 @@
     "required": "This field is required.",
     "email": "Enter a valid email address.",
     "max": "Use at most {max} characters.",
-    "money": "Enter an amount with at most 2 decimals, without separators.",
+    "money": "Enter a valid amount for this currency.",
     "passwordRules": "Use at least 8 characters, with letters and numbers.",
     "passwordMismatch": "The passwords do not match."
   },
@@ -47,6 +51,11 @@
     "LAK": "Lao kip",
     "USD": "US dollar",
     "THB": "Thai baht"
+  },
+  "money": {
+    "currency": "Currency",
+    "pasteRejected": "That is not an amount with at most 2 decimals. Nothing was pasted.",
+    "pasteRejectedWhole": "Kip amounts are whole numbers. Nothing was pasted."
   },
   "weddings": {
     "title": "Your weddings",
@@ -80,6 +89,68 @@
     "empty": {
       "title": "Nothing to show yet",
       "description": "Add revenue and expenses to see your totals and charts here."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "categories": "Categories",
+    "exchangeRates": "Exchange rates"
+  },
+  "categories": {
+    "expense": "Expenses",
+    "revenue": "Revenue",
+    "expenseHelp": "Group expenses and give each group a planned budget.",
+    "revenueHelp": "Group where the money comes from.",
+    "add": "Add category",
+    "edit": "Edit {name}",
+    "delete": "Delete {name}",
+    "empty": "No categories yet",
+    "noPlan": "No planned budget",
+    "plannedTotal": "Planned in categories",
+    "unallocated": "Unallocated budget",
+    "overAllocated": "Planned beyond the target by",
+    "saved": "Category saved",
+    "deleted": "Category deleted",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteDescription": "Only categories without any revenue or expense can be deleted.",
+    "inUse": "\"{name}\" still has revenue or expense records, including deleted ones. Move them to another category, then delete it.",
+    "form": {
+      "createTitle": {
+        "expense": "New expense category",
+        "revenue": "New revenue category"
+      },
+      "editTitle": "Edit category",
+      "name": "Name",
+      "planned": "Planned budget",
+      "plannedHelp": "Leave empty if you have no budget for this group yet."
+    }
+  },
+  "rates": {
+    "help": "Rates convert foreign amounts into {base}. Saved records keep the rate they were saved with.",
+    "add": "Add rate",
+    "addFor": "Add {currency} rate",
+    "edit": "Edit rate",
+    "delete": "Delete rate",
+    "empty": "No exchange rates yet",
+    "pair": "1 {from} = {rate}",
+    "from": "From {date}",
+    "inForce": "In use today",
+    "missingTitle": "No {currency} rate for today",
+    "missingDescription": "Revenue and expenses in {currency} cannot be saved until a {currency} to {base} rate is set on or before their date.",
+    "saved": "Rate saved",
+    "deleted": "Rate deleted",
+    "deleteTitle": "Delete this rate?",
+    "deleteDescription": "Records already saved keep their rate. New records dated from this day will use the previous rate, if there is one.",
+    "form": {
+      "createTitle": "New exchange rate",
+      "editTitle": "Edit exchange rate",
+      "description": "How much {base} one unit of the currency is worth.",
+      "currency": "Currency",
+      "rate": "{base} for 1 {from}",
+      "rateHelp": "Up to 8 decimals, with a dot as decimal mark.",
+      "rateInvalid": "Enter a rate above 0 with at most 12 digits and 8 decimals.",
+      "effectiveDate": "Effective from",
+      "effectiveDateHelp": "Records dated on or after this day use this rate."
     }
   },
   "errors": {

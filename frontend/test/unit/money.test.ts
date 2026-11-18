@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { formatMoney, formatMoneyObject } from '~/utils/money'
+import { formatMoney, formatMoneyObject, formatRate } from '~/utils/money'
+import { todayInAppTimezone } from '~/utils/dates'
+
+describe('formatRate', () => {
+  it.each([
+    ['21850.00000000', 'LAK', '₭21.850'],
+    ['628.40000000', 'LAK', '₭628,4'],
+    ['0.00004577', 'USD', '$0.00004577'],
+    ['35.12345678', 'THB', '฿35.12345678'],
+    ['123456789012.12345678', 'LAK', '₭123.456.789.012,12345678']
+  ] as const)('shows %s in %s as %s, all 8 decimals kept', (rate, base, expected) => {
+    expect(formatRate(rate, base)).toBe(expected)
+  })
+})
+
+describe('todayInAppTimezone', () => {
+  it('follows Vientiane (UTC+7), not the device clock', () => {
+    // 17:30 UTC on 30 November is 00:30 on 1 December in Vientiane.
+    expect(todayInAppTimezone(new Date('2026-11-30T17:30:00Z'))).toBe('2026-12-01')
+    expect(todayInAppTimezone(new Date('2026-11-30T16:30:00Z'))).toBe('2026-11-30')
+  })
+})
 
 describe('formatMoney', () => {
   it.each([

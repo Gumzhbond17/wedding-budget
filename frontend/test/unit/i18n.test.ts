@@ -56,7 +56,7 @@ const dynamicPrefixes = new Set(sources.flatMap(({ code }) =>
 describe('translation keys', () => {
   it('finds the keys used in app/', () => {
     expect(staticKeys.size).toBeGreaterThan(30)
-    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency']))
+    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency', 'categories.form.createTitle']))
   })
 
   it.each([...staticKeys].sort())('en.json has "%s"', (key) => {
@@ -70,6 +70,7 @@ describe('translation keys', () => {
   it('gives every wedding status and currency a label', () => {
     expect(Object.keys(lookup(en, 'weddings.status') as object).sort()).toEqual(['completed', 'planning'])
     expect(Object.keys(lookup(en, 'currency') as object).sort()).toEqual(['LAK', 'THB', 'USD'])
+    expect(Object.keys(lookup(en, 'categories.form.createTitle') as object).sort()).toEqual(['expense', 'revenue'])
   })
 
   it('has no Lao key that English lacks', () => {

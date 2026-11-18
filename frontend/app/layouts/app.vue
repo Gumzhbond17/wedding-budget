@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
+import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
 /**
  * Logged-in pages: header with the wedding selector, language, color mode and account menu.
@@ -12,6 +12,18 @@ onMounted(() => {
   weddings.ensureLoaded().catch(() => {
     // Already toasted by useApi.
   })
+})
+
+// Sections of the selected wedding.
+const sectionItems = computed<NavigationMenuItem[]>(() => {
+  const id = weddings.currentId
+
+  return id === null
+    ? []
+    : [
+        { label: t('nav.dashboard'), icon: 'i-lucide-layout-dashboard', to: `/weddings/${id}`, exact: true },
+        { label: t('nav.settings'), icon: 'i-lucide-settings', to: `/weddings/${id}/settings` }
+      ]
 })
 
 const weddingItems = computed(() => weddings.weddings.map(wedding => ({ value: wedding.id, label: wedding.name })))
@@ -98,6 +110,12 @@ async function logout(): Promise<void> {
 
     <UMain>
       <UContainer class="py-6">
+        <UNavigationMenu
+          v-if="sectionItems.length > 0"
+          :items="sectionItems"
+          highlight
+          class="-mx-2.5 mb-6 border-b border-default"
+        />
         <slot />
       </UContainer>
     </UMain>
