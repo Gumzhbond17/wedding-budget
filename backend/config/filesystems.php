@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        // Expense payment receipts. Private: never web-served directly, never under public/.
+        'receipts' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/receipts'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
