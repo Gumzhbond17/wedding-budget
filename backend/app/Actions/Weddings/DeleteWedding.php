@@ -2,6 +2,7 @@
 
 namespace App\Actions\Weddings;
 
+use App\Models\Wedding;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,10 +19,13 @@ use Illuminate\Support\Facades\Storage;
  */
 final class DeleteWedding
 {
-    public function handle(int $weddingId): void
+    public function handle(Wedding $wedding): void
     {
+        $weddingId = $wedding->getKey();
+
         $receiptPaths = DB::transaction(function () use ($weddingId): array {
             // Lock the wedding row so no record can be added to it while it is being deleted.
+            // A concurrent request may already have deleted it: then there is nothing to do.
             $exists = DB::table('weddings')->where('id', $weddingId)->lockForUpdate()->exists();
 
             if (! $exists) {

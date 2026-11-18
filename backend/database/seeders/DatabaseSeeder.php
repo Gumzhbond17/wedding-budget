@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -12,14 +11,17 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * Demo data only outside production: it creates a known login (demo@example.com / password).
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        if ($this->container->isProduction()) {
+            $this->command?->warn('Skipping demo data in production.');
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+            return;
+        }
+
+        $this->call(DemoWeddingSeeder::class);
     }
 }

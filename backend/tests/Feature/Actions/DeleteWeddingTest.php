@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Weddings\DeleteWedding;
+use App\Models\Wedding;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,7 +15,7 @@ it('deletes a wedding with all of its data, including soft-deleted records', fun
         'weddings' => 1, 'categories' => 2, 'exchange_rates' => 1, 'revenues' => 1, 'expenses' => 2, 'expense_payments' => 2,
     ]);
 
-    app(DeleteWedding::class)->handle($ids['wedding']);
+    app(DeleteWedding::class)->handle(Wedding::query()->findOrFail($ids['wedding']));
 
     expect(weddingRowCounts($ids['wedding']))->each->toBe(0)
         ->and(DB::table('expense_payments')->whereIn('expense_id', [$ids['expense'], $ids['trashed_expense']])->count())->toBe(0)
@@ -24,10 +25,12 @@ it('deletes a wedding with all of its data, including soft-deleted records', fun
     Storage::disk('receipts')->assertMissing('payments/venue.pdf');
 });
 
-it('does nothing for a wedding that does not exist', function () {
+it('does nothing when the wedding was already deleted by another request', function () {
     $ids = seedWeddingGraph();
+    $wedding = Wedding::query()->findOrFail($ids['wedding']);
+    app(DeleteWedding::class)->handle($wedding);
 
-    app(DeleteWedding::class)->handle($ids['wedding'] + 1000);
+    app(DeleteWedding::class)->handle($wedding);
 
-    expect(weddingRowCounts($ids['wedding'])['weddings'])->toBe(1);
+    expect(weddingRowCounts($ids['wedding']))->each->toBe(0);
 });
