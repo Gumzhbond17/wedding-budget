@@ -25,7 +25,7 @@ final class EnsureCategoryMatches
 
         if (! $matches) {
             throw ValidationException::withMessages([
-                'category_id' => "The selected category is not a {$type->value} category of this wedding.",
+                'category_id' => __('The selected category is not a :type category of this wedding.', ['type' => $type->value]),
             ]);
         }
     }

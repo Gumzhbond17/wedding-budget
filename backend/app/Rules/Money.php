@@ -25,13 +25,13 @@ final readonly class Money implements ValidationRule
         $string = is_int($value) ? (string) $value : $value;
 
         if (! is_string($string) || preg_match('/^\d{1,18}(\.\d{1,2})?$/', $string) !== 1) {
-            $fail('The :attribute must be an amount with at most 18 digits and 2 decimals.');
+            $fail(__('The :attribute must be an amount with at most 18 digits and 2 decimals.'));
 
             return;
         }
 
         if ($this->positive && preg_match('/[1-9]/', $string) !== 1) {
-            $fail('The :attribute must be greater than zero.');
+            $fail(__('The :attribute must be greater than zero.'));
         }
     }
 }

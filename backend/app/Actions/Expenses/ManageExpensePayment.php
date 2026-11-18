@@ -192,7 +192,7 @@ final class ManageExpensePayment
 
         if (enum_value($data['currency']) !== $expense->currency->value) {
             throw ValidationException::withMessages([
-                'currency' => "Payments must be in the expense currency ({$expense->currency->value}).",
+                'currency' => __('Payments must be in the expense currency (:currency).', ['currency' => $expense->currency->value]),
             ]);
         }
     }

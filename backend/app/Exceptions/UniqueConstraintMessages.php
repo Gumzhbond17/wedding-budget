@@ -22,10 +22,10 @@ final class UniqueConstraintMessages
     {
         foreach (self::INDEXES as $index => [$field, $message]) {
             if (str_contains($exception->getMessage(), $index)) {
-                return ValidationException::withMessages([$field => $message]);
+                return ValidationException::withMessages([$field => __($message)]);
             }
         }
 
-        return ValidationException::withMessages(['record' => 'This record already exists.']);
+        return ValidationException::withMessages(['record' => __('This record already exists.')]);
     }
 }

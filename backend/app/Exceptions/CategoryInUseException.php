@@ -16,7 +16,7 @@ final class CategoryInUseException extends RuntimeException
     public function __construct(?Throwable $previous = null)
     {
         parent::__construct(
-            'This category is still used by revenue or expense records, including deleted ones. Move them to another category first.',
+            __('This category is still used by revenue or expense records, including deleted ones. Move them to another category first.'),
             previous: $previous,
         );
     }

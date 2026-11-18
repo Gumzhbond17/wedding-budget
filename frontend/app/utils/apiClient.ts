@@ -45,6 +45,8 @@ export interface ApiClientOptions {
   baseURL: string
   fetch: Fetcher
   readCookie: (name: string) => string | null
+  /** Current UI language ("en", "lo"), sent as Accept-Language so API messages match it. */
+  locale: () => string
   onUnauthenticated: () => void | Promise<void>
   onError: (error: ApiError) => void
 }
@@ -144,7 +146,7 @@ export function createApiClient(options: ApiClientOptions) {
       await refreshCsrfToken()
     }
 
-    const headers: Record<string, string> = { Accept: 'application/json' }
+    const headers: Record<string, string> = { 'Accept': 'application/json', 'Accept-Language': options.locale() }
     const token = options.readCookie(XSRF_COOKIE)
 
     if (token !== null) {

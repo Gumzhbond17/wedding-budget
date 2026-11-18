@@ -126,7 +126,7 @@ final class ManageExpense
 
         if ($status === null || ! $status->isUserSettable()) {
             throw ValidationException::withMessages([
-                'status' => 'Status can be planned, booked or cancelled. Partially paid and paid follow from payments.',
+                'status' => __('Status can be planned, booked or cancelled. Partially paid and paid follow from payments.'),
             ]);
         }
     }
@@ -140,7 +140,7 @@ final class ManageExpense
     {
         if ($expense->payments()->exists()) {
             throw ValidationException::withMessages([
-                'currency' => 'The currency cannot change once payments are recorded.',
+                'currency' => __('The currency cannot change once payments are recorded.'),
             ]);
         }
     }

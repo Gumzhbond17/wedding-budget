@@ -19,8 +19,9 @@ type Handler = (url: string, options: FetchOptions) => unknown
  * A client over a fake $fetch. `handle` answers API calls; the CSRF endpoint sets the cookie
  * like Laravel does. Every call is recorded.
  */
-function setup(handle: Handler, { cookie = 'token-1' as string | null } = {}) {
+function setup(handle: Handler, { cookie = 'token-1' as string | null, locale = 'en' } = {}) {
   let xsrf = cookie
+  let currentLocale = locale
   let csrfRefreshes = 0
   const calls: Array<{ url: string, options: FetchOptions }> = []
 
@@ -44,12 +45,16 @@ function setup(handle: Handler, { cookie = 'token-1' as string | null } = {}) {
     baseURL: 'http://localhost:8000',
     fetch: fetch as never,
     readCookie: () => xsrf,
+    locale: () => currentLocale,
     onUnauthenticated,
     onError
   })
 
   return {
     api,
+    setLocale: (value: string) => {
+      currentLocale = value
+    },
     calls,
     apiCalls: () => calls.filter(call => call.url !== '/sanctum/csrf-cookie'),
     csrfRefreshes: () => csrfRefreshes,
@@ -70,7 +75,7 @@ describe('requests', () => {
         method: 'GET',
         baseURL: 'http://localhost:8000/api/v1',
         credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': 'token-1' },
+        headers: { 'Accept': 'application/json', 'Accept-Language': 'en', 'X-XSRF-TOKEN': 'token-1' },
         body: undefined,
         query: { page: 2 }
       }
@@ -85,6 +90,16 @@ describe('requests', () => {
     expect(calls.map(call => call.url)).toEqual(['/sanctum/csrf-cookie', '/auth/login'])
     expect(calls[0]!.options).toMatchObject({ baseURL: 'http://localhost:8000', credentials: 'include' })
     expect(calls[1]!.options.headers['X-XSRF-TOKEN']).toBe('token-2')
+  })
+
+  it('sends the current UI language, read again on every request', async () => {
+    const { api, apiCalls, setLocale } = setup(() => ({ data: null }), { locale: 'lo' })
+
+    await api.get('/weddings')
+    setLocale('en')
+    await api.get('/weddings')
+
+    expect(apiCalls().map(call => call.options.headers['Accept-Language'])).toEqual(['lo', 'en'])
   })
 
   it('does not fetch a CSRF cookie for reads', async () => {

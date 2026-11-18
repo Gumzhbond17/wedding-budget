@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\UniqueConstraintMessages;
+use App\Http\Middleware\SetLocaleFromAcceptLanguage;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sanctum SPA auth: requests from SANCTUM_STATEFUL_DOMAINS get cookies, a session and
         // CSRF protection; everything else is treated as stateless.
         $middleware->statefulApi();
+
+        // Global rather than api-group only, so 404s for unknown routes are translated too.
+        $middleware->append(SetLocaleFromAcceptLanguage::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -36,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // response never reveals a model name or whether an id exists.
         $exceptions->respond(function (Response $response, Throwable $e, Request $request): Response {
             if ($response->getStatusCode() === Response::HTTP_NOT_FOUND && $request->is('api/*')) {
-                return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
+                return response()->json(['message' => __('Not found.')], Response::HTTP_NOT_FOUND);
             }
 
             return $response;

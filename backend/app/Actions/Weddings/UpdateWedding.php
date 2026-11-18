@@ -42,13 +42,13 @@ final class UpdateWedding
     {
         if ($wedding->hasFinancialRecords()) {
             throw ValidationException::withMessages([
-                'base_currency' => 'The base currency cannot change once revenues or expenses exist (including deleted ones).',
+                'base_currency' => __('The base currency cannot change once revenues or expenses exist (including deleted ones).'),
             ]);
         }
 
         if ($wedding->exchangeRates()->exists()) {
             throw ValidationException::withMessages([
-                'base_currency' => 'Delete the exchange rates first: they convert into the current base currency.',
+                'base_currency' => __('Delete the exchange rates first: they convert into the current base currency.'),
             ]);
         }
     }

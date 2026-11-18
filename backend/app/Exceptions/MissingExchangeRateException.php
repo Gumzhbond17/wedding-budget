@@ -18,12 +18,11 @@ final class MissingExchangeRateException extends ValidationException
     public static function forPair(Currency $from, Currency $to, CarbonInterface $date): self
     {
         return self::withMessages([
-            'currency' => sprintf(
-                'No %s to %s exchange rate is set on or before %s. Add one in Settings first.',
-                $from->value,
-                $to->value,
-                $date->toDateString(),
-            ),
+            'currency' => __('No :from to :to exchange rate is set on or before :date. Add one in Settings first.', [
+                'from' => $from->value,
+                'to' => $to->value,
+                'date' => $date->toDateString(),
+            ]),
         ]);
     }
 }
