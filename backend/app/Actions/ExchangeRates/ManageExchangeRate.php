@@ -120,13 +120,24 @@ final class ManageExchangeRate
      */
     private function validate(Wedding $wedding, array $data, ?ExchangeRate $ignore = null): array
     {
-        $validator = Validator::make($data, self::rules($wedding, $data['effective_date'] ?? null, $ignore), [
+        $validator = Validator::make($data, self::rules($wedding, $data['effective_date'] ?? null, $ignore), self::messages($wedding));
+
+        return collect($validator->validate())->except('to_currency')->all();
+    }
+
+    /**
+     * Messages for rules(), shared with the Form Requests so the first check a request meets
+     * already speaks plainly (not "The from currency has already been taken.").
+     *
+     * @return array<string, string>
+     */
+    public static function messages(Wedding $wedding): array
+    {
+        return [
             'from_currency.enum' => __('Rates are entered from a foreign currency into the base currency (:currency).', ['currency' => $wedding->base_currency->value]),
             'from_currency.unique' => __('A rate for this currency already exists on that date.'),
             'to_currency.in' => __("Rates must convert into the wedding's base currency (:currency).", ['currency' => $wedding->base_currency->value]),
             'rate.regex' => __('The rate must be a number with at most 12 digits before and 8 after the decimal point.'),
-        ]);
-
-        return collect($validator->validate())->except('to_currency')->all();
+        ];
     }
 }

@@ -21,4 +21,15 @@ class StoreExchangeRateRequest extends FormRequest
 
         return ManageExchangeRate::rules($wedding, $this->input('effective_date'));
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        /** @var Wedding $wedding */
+        $wedding = $this->route('wedding');
+
+        return ManageExchangeRate::messages($wedding);
+    }
 }

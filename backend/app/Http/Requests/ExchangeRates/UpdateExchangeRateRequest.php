@@ -28,4 +28,15 @@ class UpdateExchangeRateRequest extends FormRequest
             ->map(fn (array $rules): array => ['sometimes', ...array_filter($rules, fn (mixed $rule): bool => $rule !== 'required')])
             ->all();
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        /** @var Wedding $wedding */
+        $wedding = $this->route('wedding');
+
+        return ManageExchangeRate::messages($wedding);
+    }
 }
