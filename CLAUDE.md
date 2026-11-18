@@ -20,7 +20,8 @@ Explain key trade-offs as you go.
 - Charts: Chart.js via vue-chartjs
 - Form validation: Nuxt UI `UForm` with Zod schemas
 - Testing: Pest (backend), Vitest (frontend)
-- Tooling: Laravel Pint, ESLint + Prettier, Docker (docker-compose with PHP 8.5 image)
+- Tooling: Laravel Pint (backend), ESLint with Nuxt stylistic rules, no Prettier (frontend),
+  Docker (docker-compose with PHP 8.5 image)
 
 ## Project Structure (IMPORTANT)
 Backend and frontend are separate apps in separate folders inside one repository.
@@ -168,3 +169,7 @@ Rules:
 - After each major section, list trade-offs and alternatives considered
 - Ask before making assumptions that change the data model
 - Work one deliverable at a time; run tests after each, then stop and wait for my confirmation
+- `backend/CLAUDE.md` contains Laravel's official coding guidelines. Follow them for
+  Laravel conventions. If anything conflicts with this file on scope, architecture,
+  security, or currency rules, THIS file wins.
+- Commit messages follow Conventional Commits (feat:, fix:, test:, chore:, docs:)

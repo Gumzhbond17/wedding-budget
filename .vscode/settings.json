@@ -1,0 +1,23 @@
+{
+  // Project-only settings for wedding-budget (committed to the repo)
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+
+  // Backend: format PHP with Laravel Pint via the official Laravel extension
+  "[php]": {
+    "editor.defaultFormatter": "laravel.vscode-laravel"
+  },
+
+  // Frontend: the Nuxt UI template formats through ESLint (no Prettier)
+  "eslint.format.enable": true,
+  "[vue]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.workingDirectories": ["./frontend"]
+}
