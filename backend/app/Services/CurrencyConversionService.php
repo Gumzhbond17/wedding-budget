@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Contracts\ExchangeRateProvider;
 use App\Enums\Currency;
+use App\Exceptions\MissingExchangeRateException;
 use App\Models\Wedding;
 use BcMath\Number;
 use Carbon\CarbonInterface;
 use RoundingMode;
 
 /**
- * Converts record amounts into the wedding's base currency.
+ * Converts record amounts into the wedding's base currency. Rules: docs/business-rules.md.
  *
  * Rounding rule, the only one in the application:
  * - base amount = amount * rate, multiplied at full precision with BCMath (never floats);
@@ -28,10 +29,17 @@ final class CurrencyConversionService
     public function __construct(private readonly ExchangeRateProvider $rates) {}
 
     /**
-     * Rate from $currency to the wedding's base currency on $date (1 for the base currency).
+     * Rate from $currency to the wedding's base currency on $date.
+     * The base currency itself is 1 by definition: no lookup, so it can never be "missing".
+     *
+     * @throws MissingExchangeRateException
      */
     public function rateToBase(Wedding $wedding, Currency $currency, CarbonInterface $date): Number
     {
+        if ($currency === $wedding->base_currency) {
+            return new Number('1');
+        }
+
         return $this->rates->rate($wedding, $currency, $wedding->base_currency, $date);
     }
 

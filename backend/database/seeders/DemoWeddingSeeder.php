@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Actions\ExchangeRates\ManageExchangeRate;
+use App\Actions\Expenses\ManageExpense;
 use App\Actions\Expenses\ManageExpensePayment;
+use App\Actions\Revenues\ManageRevenue;
 use App\Actions\Weddings\CreateWedding;
 use App\Enums\CategoryType;
 use App\Enums\Currency;
@@ -10,9 +13,6 @@ use App\Enums\ExpenseStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\RevenueStatus;
 use App\Models\Category;
-use App\Models\ExchangeRate;
-use App\Models\Expense;
-use App\Models\Revenue;
 use App\Models\User;
 use App\Models\Wedding;
 use Illuminate\Database\Seeder;
@@ -22,23 +22,18 @@ use Illuminate\Database\Seeder;
  * received vs expected revenue, every expense status, payments at different rates,
  * unpaid expenses due within 30 days, and over-budget categories.
  *
+ * Every record goes through the same actions as the API, so rate snapshots, cached payment
+ * totals and derived statuses follow docs/business-rules.md exactly.
+ *
  * Login: demo@example.com / password
  */
 class DemoWeddingSeeder extends Seeder
 {
-    /** Rate snapshots, as entered in Settings: 1 unit = n LAK. */
-    private const string USD_AUG = '21650.00000000';
-
-    private const string USD_OCT = '21850.00000000';
-
-    private const string THB_AUG = '612.50000000';
-
-    private const string THB_OCT = '628.40000000';
-
-    private const string LAK = '1.00000000';
-
     public function __construct(
         private readonly CreateWedding $createWedding,
+        private readonly ManageExchangeRate $exchangeRates,
+        private readonly ManageRevenue $revenues,
+        private readonly ManageExpense $expenses,
         private readonly ManageExpensePayment $payments,
     ) {}
 
@@ -60,20 +55,18 @@ class DemoWeddingSeeder extends Seeder
         $this->seedExpenses($wedding);
     }
 
+    /**
+     * Rates as entered in Settings: 1 unit = n LAK.
+     */
     private function seedExchangeRates(Wedding $wedding): void
     {
         foreach ([
-            [Currency::USD, self::USD_AUG, '2026-08-01'],
-            [Currency::USD, self::USD_OCT, '2026-10-01'],
-            [Currency::THB, self::THB_AUG, '2026-08-01'],
-            [Currency::THB, self::THB_OCT, '2026-10-01'],
+            ['USD', '21650.00000000', '2026-08-01'],
+            ['USD', '21850.00000000', '2026-10-01'],
+            ['THB', '612.50000000', '2026-08-01'],
+            ['THB', '628.40000000', '2026-10-01'],
         ] as [$from, $rate, $date]) {
-            ExchangeRate::factory()->for($wedding)->create([
-                'from_currency' => $from,
-                'to_currency' => Currency::LAK,
-                'rate' => $rate,
-                'effective_date' => $date,
-            ]);
+            $this->exchangeRates->create($wedding, ['from_currency' => $from, 'rate' => $rate, 'effective_date' => $date]);
         }
     }
 
@@ -99,73 +92,76 @@ class DemoWeddingSeeder extends Seeder
         }
     }
 
+    /**
+     * Rate snapshot by received_date, else expected_date.
+     */
     private function seedRevenues(Wedding $wedding): void
     {
         foreach ([
-            ['Family Contribution', "Groom's parents", '80000000.00', Currency::LAK, self::LAK, RevenueStatus::Received, '2026-09-01', '2026-09-15', PaymentMethod::BankTransfer],
-            ['Family Contribution', "Bride's parents", '60000000.00', Currency::LAK, self::LAK, RevenueStatus::Expected, '2027-01-15', null, null],
-            ['Personal Savings', 'Joint savings account', '3000.00', Currency::USD, self::USD_OCT, RevenueStatus::Received, '2026-10-05', '2026-10-05', PaymentMethod::BankTransfer],
-            ['Guest Gifts', 'Envelope gifts on the day (estimate)', '90000000.00', Currency::LAK, self::LAK, RevenueStatus::Expected, '2027-02-20', null, null],
-            ['Sponsorship', 'Cousin working in Bangkok', '25000.00', Currency::THB, self::THB_OCT, RevenueStatus::Expected, '2027-01-31', null, null],
-            ['Loan', 'Village credit union', '30000000.00', Currency::LAK, self::LAK, RevenueStatus::Received, '2026-11-01', '2026-11-01', PaymentMethod::Cash],
-        ] as [$category, $source, $amount, $currency, $rate, $status, $expected, $received, $method]) {
-            Revenue::factory()->for($wedding)->create([
+            ['Family Contribution', "Groom's parents", '80000000.00', Currency::LAK, RevenueStatus::Received, '2026-09-01', '2026-09-15', PaymentMethod::BankTransfer],
+            ['Family Contribution', "Bride's parents", '60000000.00', Currency::LAK, RevenueStatus::Expected, '2027-01-15', null, null],
+            ['Personal Savings', 'Joint savings account', '3000.00', Currency::USD, RevenueStatus::Received, '2026-10-05', '2026-10-05', PaymentMethod::BankTransfer],
+            ['Guest Gifts', 'Envelope gifts on the day (estimate)', '90000000.00', Currency::LAK, RevenueStatus::Expected, '2027-02-20', null, null],
+            ['Sponsorship', 'Cousin working in Bangkok', '25000.00', Currency::THB, RevenueStatus::Expected, '2027-01-31', null, null],
+            ['Loan', 'Village credit union', '30000000.00', Currency::LAK, RevenueStatus::Received, '2026-11-01', '2026-11-01', PaymentMethod::Cash],
+        ] as [$category, $source, $amount, $currency, $status, $expected, $received, $method]) {
+            $this->revenues->create($wedding, [
                 'category_id' => $this->category($wedding, CategoryType::Revenue, $category)->id,
                 'source' => $source,
                 'amount' => $amount,
-                'currency' => $currency,
-                'exchange_rate' => $rate,
-                'status' => $status,
+                'currency' => $currency->value,
+                'status' => $status->value,
                 'expected_date' => $expected,
                 'received_date' => $received,
-                'payment_method' => $method,
+                'payment_method' => $method?->value,
             ]);
         }
     }
 
+    /**
+     * Expense rates are snapshotted on the seeding day; payment rates by paid_date.
+     */
     private function seedExpenses(Wedding $wedding): void
     {
         $expenses = [
-            // [category, description, vendor, currency, rate, estimated, actual, user status, due date, payments[amount, date, method]; payment rates come from the rate table]
-            ['Venue', 'Banquet hall, 400 guests', 'Don Chan Palace', Currency::USD, self::USD_OCT, '6500.00', '6800.00', ExpenseStatus::Booked, '2027-01-20', [
+            // [category, description, vendor, currency, estimated, actual, user status, due date, payments[amount, date, method]]
+            ['Venue', 'Banquet hall, 400 guests', 'Don Chan Palace', Currency::USD, '6500.00', '6800.00', ExpenseStatus::Booked, '2027-01-20', [
                 ['2000.00', '2026-08-20', PaymentMethod::BankTransfer],
                 ['2000.00', '2026-10-20', PaymentMethod::BankTransfer],
             ]],
-            ['Catering', 'Dinner buffet, 400 guests', 'Kualao Catering', Currency::LAK, self::LAK, '120000000.00', null, ExpenseStatus::Booked, '2027-02-10', []],
-            ['Attire', 'Sinh and suit tailoring', 'Phaxay Silk', Currency::THB, self::THB_OCT, '35000.00', '35000.00', ExpenseStatus::Booked, '2026-10-15', [
+            ['Catering', 'Dinner buffet, 400 guests', 'Kualao Catering', Currency::LAK, '120000000.00', null, ExpenseStatus::Booked, '2027-02-10', []],
+            ['Attire', 'Sinh and suit tailoring', 'Phaxay Silk', Currency::THB, '35000.00', '35000.00', ExpenseStatus::Booked, '2026-10-15', [
                 ['35000.00', '2026-10-10', PaymentMethod::BankTransfer],
             ]],
-            ['Photography & Video', 'Pre-wedding and ceremony shoot', 'Lumiere Studio', Currency::LAK, self::LAK, '18000000.00', '18000000.00', ExpenseStatus::Booked, '2026-12-05', [
+            ['Photography & Video', 'Pre-wedding and ceremony shoot', 'Lumiere Studio', Currency::LAK, '18000000.00', '18000000.00', ExpenseStatus::Booked, '2026-12-05', [
                 ['5000000.00', '2026-09-01', PaymentMethod::Cash],
             ]],
-            ['Decoration & Flowers', 'Baci and reception flowers', 'Champa Flowers', Currency::LAK, self::LAK, '12000000.00', null, ExpenseStatus::Planned, '2027-02-15', []],
-            ['Music & Entertainment', 'Live band and MC', 'Mekong Sound', Currency::LAK, self::LAK, '9000000.00', '9500000.00', ExpenseStatus::Booked, '2026-12-10', []],
-            ['Invitations', '500 printed invitations', 'Vientiane Print House', Currency::LAK, self::LAK, '4500000.00', '4200000.00', ExpenseStatus::Booked, '2026-11-05', [
+            ['Decoration & Flowers', 'Baci and reception flowers', 'Champa Flowers', Currency::LAK, '12000000.00', null, ExpenseStatus::Planned, '2027-02-15', []],
+            ['Music & Entertainment', 'Live band and MC', 'Mekong Sound', Currency::LAK, '9000000.00', '9500000.00', ExpenseStatus::Booked, '2026-12-10', []],
+            ['Invitations', '500 printed invitations', 'Vientiane Print House', Currency::LAK, '4500000.00', '4200000.00', ExpenseStatus::Booked, '2026-11-05', [
                 ['4200000.00', '2026-11-05', PaymentMethod::Cash],
             ]],
-            ['Rings & Jewelry', 'Gold wedding rings', 'Yaowarat Gold', Currency::THB, self::THB_OCT, '48000.00', '52000.00', ExpenseStatus::Booked, '2026-12-01', [
+            ['Rings & Jewelry', 'Gold wedding rings', 'Yaowarat Gold', Currency::THB, '48000.00', '52000.00', ExpenseStatus::Booked, '2026-12-01', [
                 ['30000.00', '2026-10-15', PaymentMethod::Cash],
             ]],
-            ['Transportation', 'Wedding car rental', 'Lao Limousine', Currency::LAK, self::LAK, '3000000.00', null, ExpenseStatus::Planned, '2027-02-18', []],
-            ['Ceremony', "Monks' offerings and Baci", null, Currency::LAK, self::LAK, '6000000.00', null, ExpenseStatus::Planned, '2027-02-19', []],
-            ['Honeymoon', 'Luang Prabang, 4 nights', 'Mekong Riverside Hotel', Currency::USD, self::USD_OCT, '1200.00', null, ExpenseStatus::Planned, '2027-02-25', []],
-            ['Miscellaneous', 'Drone videography', 'SkyView Laos', Currency::LAK, self::LAK, '4000000.00', null, ExpenseStatus::Cancelled, null, []],
+            ['Transportation', 'Wedding car rental', 'Lao Limousine', Currency::LAK, '3000000.00', null, ExpenseStatus::Planned, '2027-02-18', []],
+            ['Ceremony', "Monks' offerings and Baci", null, Currency::LAK, '6000000.00', null, ExpenseStatus::Planned, '2027-02-19', []],
+            ['Honeymoon', 'Luang Prabang, 4 nights', 'Mekong Riverside Hotel', Currency::USD, '1200.00', null, ExpenseStatus::Planned, '2027-02-25', []],
+            ['Miscellaneous', 'Drone videography', 'SkyView Laos', Currency::LAK, '4000000.00', null, ExpenseStatus::Cancelled, null, []],
         ];
 
-        foreach ($expenses as [$category, $description, $vendor, $currency, $rate, $estimated, $actual, $status, $due, $payments]) {
-            $expense = Expense::factory()->for($wedding)->create([
+        foreach ($expenses as [$category, $description, $vendor, $currency, $estimated, $actual, $status, $due, $payments]) {
+            $expense = $this->expenses->create($wedding, [
                 'category_id' => $this->category($wedding, CategoryType::Expense, $category)->id,
                 'description' => $description,
                 'vendor_name' => $vendor,
-                'currency' => $currency,
-                'exchange_rate' => $rate,
+                'currency' => $currency->value,
                 'estimated_amount' => $estimated,
                 'actual_amount' => $actual,
-                'status' => $status,
+                'status' => $status->value,
                 'due_date' => $due,
             ]);
 
-            // Same path as the API: rate snapshot by paid_date, cached totals and status refreshed.
             foreach ($payments as [$amount, $paidDate, $method]) {
                 $this->payments->create($expense, [
                     'amount' => $amount,

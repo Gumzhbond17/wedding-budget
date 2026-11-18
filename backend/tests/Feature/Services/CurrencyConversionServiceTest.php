@@ -1,11 +1,24 @@
 <?php
 
+use App\Contracts\ExchangeRateProvider;
 use App\Enums\Currency;
 use App\Exceptions\MissingExchangeRateException;
 use App\Models\ExchangeRate;
 use App\Models\Wedding;
 use App\Services\CurrencyConversionService;
 use Illuminate\Support\Carbon;
+
+/**
+ * A LAK wedding with THB rates effective 2026-08-01 (612.50) and 2026-10-01 (628.40).
+ */
+function weddingWithThbRates(): Wedding
+{
+    $wedding = Wedding::factory()->create();
+    ExchangeRate::factory()->for($wedding)->thbToLak()->create(['rate' => '612.50000000', 'effective_date' => '2026-08-01']);
+    ExchangeRate::factory()->for($wedding)->thbToLak()->create(['rate' => '628.40000000', 'effective_date' => '2026-10-01']);
+
+    return $wedding;
+}
 
 it('converts and rounds half away from zero to 2 decimals', function (string $amount, string $rate, string $expected) {
     expect(app(CurrencyConversionService::class)->convert($amount, $rate))->toBe($expected);
@@ -19,16 +32,15 @@ it('converts and rounds half away from zero to 2 decimals', function (string $am
     'large LAK value stays exact' => ['999999999999.99', '21850.12345678', '21850123456779781.50'],
 ]);
 
-it('uses 1 for the base currency', function () {
+it('uses rate 1 for the base currency without a lookup', function () {
+    $this->mock(ExchangeRateProvider::class)->shouldNotReceive('rate');
     $wedding = Wedding::factory()->create();
 
     expect((string) app(CurrencyConversionService::class)->rateToBase($wedding, Currency::LAK, Carbon::parse('2026-11-18')))->toBe('1');
 });
 
 it('uses the latest rate effective on or before the date', function (string $date, string $expected) {
-    $wedding = Wedding::factory()->create();
-    ExchangeRate::factory()->for($wedding)->thbToLak()->create(['rate' => '612.50000000', 'effective_date' => '2026-08-01']);
-    ExchangeRate::factory()->for($wedding)->thbToLak()->create(['rate' => '628.40000000', 'effective_date' => '2026-10-01']);
+    $wedding = weddingWithThbRates();
 
     expect((string) app(CurrencyConversionService::class)->rateToBase($wedding, Currency::THB, Carbon::parse($date)))->toBe($expected);
 })->with([
@@ -37,17 +49,24 @@ it('uses the latest rate effective on or before the date', function (string $dat
     'after the newer rate' => ['2026-11-18', '628.40000000'],
 ]);
 
+it('fails with a 422 naming the pair and date instead of using a later rate', function () {
+    $wedding = weddingWithThbRates();
+
+    try {
+        app(CurrencyConversionService::class)->rateToBase($wedding, Currency::THB, Carbon::parse('2026-07-31'));
+        $this->fail('Expected a missing rate error.');
+    } catch (MissingExchangeRateException $exception) {
+        expect($exception->status)->toBe(422)
+            ->and($exception->errors())->toBe([
+                'currency' => ['No THB to LAK exchange rate is set on or before 2026-07-31. Add one in Settings first.'],
+            ]);
+    }
+});
+
 it('never uses another wedding\'s rates', function () {
     $wedding = Wedding::factory()->create();
     ExchangeRate::factory()->create(['effective_date' => '2026-01-01']);
 
     expect(fn () => app(CurrencyConversionService::class)->rateToBase($wedding, Currency::USD, Carbon::parse('2026-11-18')))
         ->toThrow(MissingExchangeRateException::class, 'No USD to LAK exchange rate is set on or before 2026-11-18.');
-});
-
-it('renders a missing rate as a 422 JSON error', function () {
-    $response = (new MissingExchangeRateException(Currency::USD, Currency::LAK, Carbon::parse('2026-11-18')))->render();
-
-    expect($response->getStatusCode())->toBe(422)
-        ->and($response->getData(true))->toMatchArray(['code' => 'exchange_rate_missing']);
 });
