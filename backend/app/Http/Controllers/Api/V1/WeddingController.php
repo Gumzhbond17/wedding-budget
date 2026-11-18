@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Weddings\CreateWedding;
 use App\Actions\Weddings\DeleteWedding;
+use App\Actions\Weddings\ListWeddings;
 use App\Actions\Weddings\UpdateWedding;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Weddings\StoreWeddingRequest;
@@ -34,14 +35,9 @@ class WeddingController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request, ListWeddings $weddings): AnonymousResourceCollection
     {
-        $weddings = $request->user()->weddings()
-            ->orderByDesc('wedding_date')
-            ->orderByDesc('id')
-            ->paginate(25);
-
-        return WeddingResource::collection($weddings);
+        return WeddingResource::collection($weddings->handle($request->user()));
     }
 
     public function store(StoreWeddingRequest $request, CreateWedding $createWedding): JsonResponse

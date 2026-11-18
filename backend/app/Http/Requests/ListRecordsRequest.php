@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Actions\RecordListCriteria;
 use App\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 abstract class ListRecordsRequest extends FormRequest
 {
+    public const int DEFAULT_PER_PAGE = 25;
+
     public const int MAX_PER_PAGE = 100;
 
     /**
@@ -45,17 +48,22 @@ abstract class ListRecordsRequest extends FormRequest
     }
 
     /**
-     * @return array{0: string, 1: 'asc'|'desc'}
+     * Validated input as criteria for the list query; $defaultSort uses the ?sort= syntax.
      */
-    public function sortColumnAndDirection(string $default): array
+    public function criteria(string $defaultSort): RecordListCriteria
     {
-        $sort = $this->validated('sort', $default);
+        $sort = $this->validated('sort', $defaultSort);
+        $categoryId = $this->validated('category_id');
 
-        return str_starts_with($sort, '-') ? [substr($sort, 1), 'desc'] : [$sort, 'asc'];
-    }
-
-    public function perPage(): int
-    {
-        return (int) $this->validated('per_page', 25);
+        return new RecordListCriteria(
+            categoryId: $categoryId === null ? null : (int) $categoryId,
+            status: $this->validated('status'),
+            currency: $this->validated('currency'),
+            dateFrom: $this->validated('date_from'),
+            dateTo: $this->validated('date_to'),
+            sortColumn: ltrim($sort, '-'),
+            sortDirection: str_starts_with($sort, '-') ? 'desc' : 'asc',
+            perPage: (int) $this->validated('per_page', self::DEFAULT_PER_PAGE),
+        );
     }
 }

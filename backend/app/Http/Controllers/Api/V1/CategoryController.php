@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Categories\DeleteCategory;
+use App\Actions\Categories\ListCategories;
 use App\Enums\CategoryType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Categories\StoreCategoryRequest;
@@ -30,20 +31,12 @@ class CategoryController extends Controller implements HasMiddleware
         ];
     }
 
-    /**
-     * Not paginated: a wedding has a few dozen categories at most, and forms need all of them.
-     */
-    public function index(Request $request, Wedding $wedding): AnonymousResourceCollection
+    public function index(Request $request, Wedding $wedding, ListCategories $categories): AnonymousResourceCollection
     {
         $validated = $request->validate(['type' => ['sometimes', Rule::enum(CategoryType::class)]]);
+        $type = isset($validated['type']) ? CategoryType::from($validated['type']) : null;
 
-        $categories = $wedding->categories()
-            ->when($validated['type'] ?? null, fn ($query, string $type) => $query->where('type', $type))
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get();
-
-        return CategoryResource::collection($categories);
+        return CategoryResource::collection($categories->handle($wedding, $type));
     }
 
     public function store(StoreCategoryRequest $request, Wedding $wedding): JsonResponse

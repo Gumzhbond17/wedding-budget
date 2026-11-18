@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\ExchangeRates\ListExchangeRates;
 use App\Actions\ExchangeRates\ManageExchangeRate;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExchangeRates\StoreExchangeRateRequest;
@@ -27,14 +28,9 @@ class ExchangeRateController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(Wedding $wedding): AnonymousResourceCollection
+    public function index(Wedding $wedding, ListExchangeRates $rates): AnonymousResourceCollection
     {
-        $rates = $wedding->exchangeRates()
-            ->orderByDesc('effective_date')
-            ->orderBy('from_currency')
-            ->paginate(50);
-
-        return ExchangeRateResource::collection($rates);
+        return ExchangeRateResource::collection($rates->handle($wedding));
     }
 
     public function store(StoreExchangeRateRequest $request, Wedding $wedding, ManageExchangeRate $rates): JsonResponse

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Expenses\FindReceiptPayment;
 use App\Http\Controllers\Controller;
 use App\Models\ExpensePayment;
 use Illuminate\Support\Facades\Storage;
@@ -32,9 +33,9 @@ class ReceiptDownloadController extends Controller
      * existing ones, revealing which payments exist. The lookup now happens only after the
      * signature has been verified.
      */
-    public function __invoke(string $payment): StreamedResponse
+    public function __invoke(string $payment, FindReceiptPayment $findPayment): StreamedResponse
     {
-        $payment = ExpensePayment::query()->find($payment);
+        $payment = $findPayment->handle($payment);
         $disk = Storage::disk('receipts');
 
         abort_if($payment?->receipt_path === null || ! $disk->exists($payment->receipt_path), 404);

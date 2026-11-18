@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Revenues\ListRevenues;
 use App\Actions\Revenues\ManageRevenue;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Revenues\ListRevenuesRequest;
@@ -29,26 +30,9 @@ class RevenueController extends Controller implements HasMiddleware
         ];
     }
 
-    /**
-     * Date range filters on the transaction date: received_date, else expected_date.
-     */
-    public function index(ListRevenuesRequest $request, Wedding $wedding): AnonymousResourceCollection
+    public function index(ListRevenuesRequest $request, Wedding $wedding, ListRevenues $revenues): AnonymousResourceCollection
     {
-        [$column, $direction] = $request->sortColumnAndDirection('-created_at');
-
-        $revenues = $wedding->revenues()
-            ->with('category')
-            ->when($request->validated('category_id'), fn ($query, $id) => $query->where('category_id', $id))
-            ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
-            ->when($request->validated('currency'), fn ($query, $currency) => $query->where('currency', $currency))
-            ->when($request->validated('date_from'), fn ($query, $from) => $query->whereRaw('COALESCE(received_date, expected_date) >= ?', [$from]))
-            ->when($request->validated('date_to'), fn ($query, $to) => $query->whereRaw('COALESCE(received_date, expected_date) <= ?', [$to]))
-            ->orderBy($column, $direction)
-            ->orderBy('id', $direction)
-            ->paginate($request->perPage())
-            ->withQueryString();
-
-        return RevenueResource::collection($revenues);
+        return RevenueResource::collection($revenues->handle($wedding, $request->criteria('-created_at')));
     }
 
     public function store(StoreRevenueRequest $request, Wedding $wedding, ManageRevenue $revenues): JsonResponse

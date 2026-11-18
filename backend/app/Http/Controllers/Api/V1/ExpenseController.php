@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Expenses\ListExpensePayments;
+use App\Actions\Expenses\ListExpenses;
 use App\Actions\Expenses\ManageExpense;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Expenses\ListExpensesRequest;
@@ -29,26 +31,9 @@ class ExpenseController extends Controller implements HasMiddleware
         ];
     }
 
-    /**
-     * Date range filters on due_date.
-     */
-    public function index(ListExpensesRequest $request, Wedding $wedding): AnonymousResourceCollection
+    public function index(ListExpensesRequest $request, Wedding $wedding, ListExpenses $expenses): AnonymousResourceCollection
     {
-        [$column, $direction] = $request->sortColumnAndDirection('-created_at');
-
-        $expenses = $wedding->expenses()
-            ->with('category')
-            ->when($request->validated('category_id'), fn ($query, $id) => $query->where('category_id', $id))
-            ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
-            ->when($request->validated('currency'), fn ($query, $currency) => $query->where('currency', $currency))
-            ->when($request->validated('date_from'), fn ($query, $from) => $query->where('due_date', '>=', $from))
-            ->when($request->validated('date_to'), fn ($query, $to) => $query->where('due_date', '<=', $to))
-            ->orderBy($column, $direction)
-            ->orderBy('id', $direction)
-            ->paginate($request->perPage())
-            ->withQueryString();
-
-        return ExpenseResource::collection($expenses);
+        return ExpenseResource::collection($expenses->handle($wedding, $request->criteria('-created_at')));
     }
 
     public function store(StoreExpenseRequest $request, Wedding $wedding, ManageExpense $expenses): JsonResponse
@@ -60,9 +45,9 @@ class ExpenseController extends Controller implements HasMiddleware
             ->setStatusCode(201);
     }
 
-    public function show(Wedding $wedding, Expense $expense): ExpenseResource
+    public function show(Wedding $wedding, Expense $expense, ListExpensePayments $payments): ExpenseResource
     {
-        return ExpenseResource::make($expense->load(['category', 'payments' => fn ($query) => $query->orderBy('paid_date')]));
+        return ExpenseResource::make($expense->load('category')->setRelation('payments', $payments->handle($expense)));
     }
 
     public function update(UpdateExpenseRequest $request, Wedding $wedding, Expense $expense, ManageExpense $expenses): ExpenseResource

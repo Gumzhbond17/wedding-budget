@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Expenses\ListExpensePayments;
 use App\Actions\Expenses\ManageExpensePayment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payments\StoreExpensePaymentRequest;
@@ -31,12 +32,9 @@ class ExpensePaymentController extends Controller implements HasMiddleware
         ];
     }
 
-    /**
-     * Not paginated: payments per expense are few (deposit, instalments, balance).
-     */
-    public function index(Wedding $wedding, Expense $expense): AnonymousResourceCollection
+    public function index(Wedding $wedding, Expense $expense, ListExpensePayments $payments): AnonymousResourceCollection
     {
-        return ExpensePaymentResource::collection($expense->payments()->orderBy('paid_date')->orderBy('id')->get());
+        return ExpensePaymentResource::collection($payments->handle($expense));
     }
 
     public function store(StoreExpensePaymentRequest $request, Wedding $wedding, Expense $expense, ManageExpensePayment $payments): JsonResponse
