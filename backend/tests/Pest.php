@@ -1,5 +1,12 @@
 <?php
 
+use App\Models\Category;
+use App\Models\ExchangeRate;
+use App\Models\Expense;
+use App\Models\ExpensePayment;
+use App\Models\Revenue;
+use App\Models\User;
+use App\Models\Wedding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -105,5 +112,34 @@ function weddingRowCounts(int $wedding): array
         'revenues' => DB::table('revenues')->where('wedding_id', $wedding)->count(),
         'expenses' => DB::table('expenses')->where('wedding_id', $wedding)->count(),
         'expense_payments' => DB::table('expense_payments')->whereIn('expense_id', $expenseIds)->count(),
+    ];
+}
+
+/*
+|--------------------------------------------------------------------------
+| HTTP fixtures
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * A wedding owned by $user with one of every nested resource, including a payment with a
+ * receipt path. Records are created through factories; the receipts disk should be faked.
+ *
+ * @return array{wedding: Wedding, category: Category, exchangeRate: ExchangeRate, revenue: Revenue, expense: Expense, payment: ExpensePayment}
+ */
+function weddingGraphFor(User $user): array
+{
+    $wedding = Wedding::factory()->for($user)->create();
+    $expense = Expense::factory()->for($wedding)->invoiced()->create();
+    $payment = ExpensePayment::factory()->for($expense)->create(['amount' => '100000.00']);
+    $payment->forceFill(['receipt_path' => "payments/{$payment->id}/receipt.png", 'receipt_original_name' => 'receipt.png', 'receipt_mime_type' => 'image/png', 'receipt_size' => 10])->save();
+
+    return [
+        'wedding' => $wedding,
+        'category' => Category::factory()->for($wedding)->create(),
+        'exchangeRate' => ExchangeRate::factory()->for($wedding)->create(),
+        'revenue' => Revenue::factory()->for($wedding)->create(),
+        'expense' => $expense,
+        'payment' => $payment,
     ];
 }

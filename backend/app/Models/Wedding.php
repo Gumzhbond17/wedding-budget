@@ -62,7 +62,7 @@ class Wedding extends Model
      */
     public function categories(): HasMany
     {
-        return $this->hasMany(Category::class);
+        return $this->hasMany(Category::class)->chaperone();
     }
 
     /**
@@ -70,7 +70,7 @@ class Wedding extends Model
      */
     public function exchangeRates(): HasMany
     {
-        return $this->hasMany(ExchangeRate::class);
+        return $this->hasMany(ExchangeRate::class)->chaperone();
     }
 
     /**
@@ -78,7 +78,7 @@ class Wedding extends Model
      */
     public function revenues(): HasMany
     {
-        return $this->hasMany(Revenue::class);
+        return $this->hasMany(Revenue::class)->chaperone();
     }
 
     /**
@@ -86,7 +86,7 @@ class Wedding extends Model
      */
     public function expenses(): HasMany
     {
-        return $this->hasMany(Expense::class);
+        return $this->hasMany(Expense::class)->chaperone();
     }
 
     /**

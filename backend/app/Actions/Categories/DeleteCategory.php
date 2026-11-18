@@ -3,8 +3,8 @@
 namespace App\Actions\Categories;
 
 use App\Exceptions\CategoryInUseException;
+use App\Models\Category;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Deletes a category only when no revenue or expense row references it.
@@ -21,10 +21,10 @@ final class DeleteCategory
     /**
      * @throws CategoryInUseException
      */
-    public function handle(int $categoryId): void
+    public function handle(Category $category): void
     {
         try {
-            DB::table('categories')->where('id', $categoryId)->delete();
+            $category->delete();
         } catch (QueryException $exception) {
             if (($exception->errorInfo[1] ?? null) === self::MYSQL_ROW_IS_REFERENCED) {
                 throw new CategoryInUseException(previous: $exception);

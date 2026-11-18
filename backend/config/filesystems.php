@@ -33,12 +33,15 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Off: "serve" registers GET/PUT storage/{path}, which exposes the whole private disk to
+            // any signed URL. Receipts use their own disk and a policy-checked signed route instead.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
 
-        // Expense payment receipts. Private: never web-served directly, never under public/.
+        // Expense payment receipts. Private: never web-served directly, never under public/; only
+        // streamed by ReceiptDownloadController for a valid short-lived signed URL.
         'receipts' => [
             'driver' => 'local',
             'root' => storage_path('app/private/receipts'),

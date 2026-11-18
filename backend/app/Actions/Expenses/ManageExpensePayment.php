@@ -6,10 +6,13 @@ use App\Exceptions\MissingExchangeRateException;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
 use App\Services\CurrencyConversionService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Throwable;
 
 use function Illuminate\Support\enum_value;
 
@@ -44,7 +47,7 @@ final class ManageExpensePayment
 
             $expense->refreshPaymentTotals();
 
-            return $payment;
+            return $payment->setRelation('expense', $expense);
         });
     }
 
@@ -76,8 +79,76 @@ final class ManageExpensePayment
 
             $expense->refreshPaymentTotals();
 
-            return $payment;
+            return $payment->setRelation('expense', $expense);
         });
+    }
+
+    /**
+     * Store an uploaded receipt (already validated for MIME type and size) on the private disk,
+     * replacing any previous one. The file is written first under a random name; if the database
+     * update fails it is removed again, and the replaced file is deleted only after the commit.
+     */
+    public function attachReceipt(ExpensePayment $payment, UploadedFile $file): ExpensePayment
+    {
+        $disk = Storage::disk('receipts');
+        // Random file name from putFile(): the client's file name never becomes part of a path.
+        $path = $disk->putFile("payments/{$payment->getKey()}", $file);
+
+        if ($path === false) {
+            throw new RuntimeException('The receipt could not be stored.');
+        }
+
+        try {
+            [$payment, $previousPath] = DB::transaction(function () use ($payment, $file, $path): array {
+                $expense = $this->lockExpense($payment->expense_id);
+                $payment = ExpensePayment::query()->lockForUpdate()->findOrFail($payment->getKey());
+                $previousPath = $payment->receipt_path;
+
+                $payment->forceFill([
+                    'receipt_path' => $path,
+                    // Display name only; never used to build a path.
+                    'receipt_original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
+                    'receipt_mime_type' => $file->getMimeType(),
+                    'receipt_size' => $file->getSize(),
+                ])->save();
+
+                return [$payment->setRelation('expense', $expense), $previousPath];
+            });
+        } catch (Throwable $exception) {
+            $disk->delete($path);
+
+            throw $exception;
+        }
+
+        if ($previousPath !== null) {
+            $disk->delete($previousPath);
+        }
+
+        return $payment;
+    }
+
+    public function removeReceipt(ExpensePayment $payment): ExpensePayment
+    {
+        [$payment, $previousPath] = DB::transaction(function () use ($payment): array {
+            $expense = $this->lockExpense($payment->expense_id);
+            $payment = ExpensePayment::query()->lockForUpdate()->findOrFail($payment->getKey());
+            $previousPath = $payment->receipt_path;
+
+            $payment->forceFill([
+                'receipt_path' => null,
+                'receipt_original_name' => null,
+                'receipt_mime_type' => null,
+                'receipt_size' => null,
+            ])->save();
+
+            return [$payment->setRelation('expense', $expense), $previousPath];
+        });
+
+        if ($previousPath !== null) {
+            Storage::disk('receipts')->delete($previousPath);
+        }
+
+        return $payment;
     }
 
     public function delete(ExpensePayment $payment): void

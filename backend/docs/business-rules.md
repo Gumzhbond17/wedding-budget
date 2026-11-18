@@ -81,3 +81,21 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
   409 `category_in_use`; financial records are never deleted with it.
 - Deleting a wedding goes through `App\Actions\Weddings\DeleteWedding`, which removes
   everything it owns in one transaction and its receipt files after the commit.
+
+## Access and API behaviour
+
+- Every wedding-scoped request is authorized against the wedding owner (policies, run as
+  controller middleware before validation). Another user's wedding, record, payment, rate or
+  category answers **404** with the same body as a missing id (`{"message": "Not found."}`),
+  never 403, so ids are not confirmed. Nested ids must belong to their parent (scoped bindings).
+- Duplicate-key races surface as the standard 422 `{message, errors}` body.
+- Rate limits: login/register 5 per minute per email and 20 per minute per IP; writes 60 per
+  minute per user; reads are not limited.
+- Receipts (JPEG, PNG, WebP or PDF, max 5 MB, MIME type sniffed from the content) live on the
+  private `receipts` disk. They are reachable only through a signed URL valid for 2 minutes,
+  issued after the payment policy check, served inline with a sanitized file name,
+  `Cache-Control: private, no-store`, `nosniff` and `Referrer-Policy: no-referrer`. Signed URLs
+  are never logged. The local disk's `storage/{path}` route is disabled.
+- Amounts are JSON strings with their currency (`{"amount": "1500.00", "currency": "USD"}`);
+  records expose both original and base amounts. `outstanding_amount.basis` is `estimated`
+  until `actual_amount` is set, then `actual`.

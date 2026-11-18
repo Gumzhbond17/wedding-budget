@@ -1,9 +1,12 @@
 <?php
 
+use App\Exceptions\UniqueConstraintMessages;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     // API-only app: no web routes. Sanctum registers its own /sanctum/csrf-cookie route.
@@ -13,10 +16,29 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Sanctum SPA auth: requests from SANCTUM_STATEFUL_DOMAINS get cookies, a session and
+        // CSRF protection; everything else is treated as stateless.
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // A duplicate that slipped past validation (two concurrent requests) is still a client
+        // error: same 422 {message, errors} body as a Form Request failure, never a 500.
+        $exceptions->map(
+            UniqueConstraintViolationException::class,
+            fn (UniqueConstraintViolationException $e) => UniqueConstraintMessages::toValidationException($e),
+        );
+
+        // One body for every 404 (missing route, missing model, another user's record), so the
+        // response never reveals a model name or whether an id exists.
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request): Response {
+            if ($response->getStatusCode() === Response::HTTP_NOT_FOUND && $request->is('api/*')) {
+                return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
+            }
+
+            return $response;
+        });
     })->create();

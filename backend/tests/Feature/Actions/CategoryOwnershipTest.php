@@ -14,14 +14,16 @@ use Illuminate\Validation\ValidationException;
 | The write actions must reject any category outside the wedding or of the wrong type.
 */
 
+// Closure-typed test parameters receive these closures as-is (Pest does not call them), so each
+// one builds the category id once the test's own wedding exists.
 dataset('foreign or mismatched categories', [
-    'from another user\'s wedding' => fn () => fn (string $type) => Category::factory()->{$type}()
+    'from another user\'s wedding' => fn (string $type): int => Category::factory()->{$type}()
         ->for(Wedding::factory()->for(User::factory()))->create()->id,
-    'from the user\'s other wedding' => fn () => fn (string $type, Wedding $wedding) => Category::factory()->{$type}()
-        ->for(Wedding::factory()->for($wedding->user))->create()->id,
-    'of the wrong type' => fn () => fn (string $type, Wedding $wedding) => Category::factory()
+    'from the user\'s other wedding' => fn (string $type, Wedding $wedding): int => Category::factory()->{$type}()
+        ->for(Wedding::factory()->create(['user_id' => $wedding->user_id]))->create()->id,
+    'of the wrong type' => fn (string $type, Wedding $wedding): int => Category::factory()
         ->{$type === 'revenue' ? 'expense' : 'revenue'}()->for($wedding)->create()->id,
-    'that does not exist' => fn () => fn () => 999_999,
+    'that does not exist' => fn (): int => 999_999,
 ]);
 
 it('rejects creating revenue with such a category', function (Closure $categoryId) {

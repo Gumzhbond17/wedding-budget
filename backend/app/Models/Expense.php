@@ -82,7 +82,7 @@ class Expense extends Model
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(ExpensePayment::class);
+        return $this->hasMany(ExpensePayment::class)->chaperone();
     }
 
     /**
