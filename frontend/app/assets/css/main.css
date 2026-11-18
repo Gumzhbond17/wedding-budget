@@ -2,7 +2,12 @@
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Public Sans', sans-serif;
+  /*
+   * Public Sans has no Lao glyphs, so the browser takes Lao characters from Noto Sans Lao
+   * (per glyph, in the same line). @nuxt/fonts (bundled with Nuxt UI) downloads both at
+   * build time and serves them from this app: no request to Google at runtime.
+   */
+  --font-sans: 'Public Sans', 'Noto Sans Lao', sans-serif;
 
   --color-green-50: #EFFDF5;
   --color-green-100: #D9FBE8;

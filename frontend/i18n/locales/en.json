@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Wedding Budget",
+    "tagline": "Plan your wedding budget in kip, dollars and baht."
+  },
+  "common": {
+    "cancel": "Cancel"
+  },
+  "nav": {
+    "account": "Account",
+    "allWeddings": "All weddings",
+    "language": "Language",
+    "logout": "Log out",
+    "selectWedding": "Select a wedding"
+  },
+  "auth": {
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "passwordConfirmation": "Confirm password"
+    },
+    "login": {
+      "title": "Log in",
+      "submit": "Log in",
+      "remember": "Keep me logged in",
+      "noAccount": "No account yet?",
+      "register": "Create one"
+    },
+    "register": {
+      "title": "Create your account",
+      "submit": "Create account",
+      "passwordHint": "At least 8 characters, with letters and numbers",
+      "haveAccount": "Already have an account?",
+      "login": "Log in"
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Enter a valid email address.",
+    "max": "Use at most {max} characters.",
+    "money": "Enter an amount with at most 2 decimals, without separators.",
+    "passwordRules": "Use at least 8 characters, with letters and numbers.",
+    "passwordMismatch": "The passwords do not match."
+  },
+  "currency": {
+    "LAK": "Lao kip",
+    "USD": "US dollar",
+    "THB": "Thai baht"
+  },
+  "weddings": {
+    "title": "Your weddings",
+    "create": "New wedding",
+    "created": "Wedding created",
+    "budgetTarget": "Budget target",
+    "noDate": "Date not set",
+    "empty": {
+      "title": "No weddings yet",
+      "description": "Create a wedding to start tracking revenue and expenses."
+    },
+    "status": {
+      "planning": "Planning",
+      "completed": "Completed"
+    },
+    "form": {
+      "title": "New wedding",
+      "name": "Name",
+      "namePlaceholder": "Noy & Somchai",
+      "weddingDate": "Wedding date",
+      "baseCurrency": "Base currency",
+      "baseCurrencyHelp": "Dashboard totals are shown in this currency.",
+      "budgetTarget": "Budget target",
+      "notes": "Notes",
+      "submit": "Create wedding"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalsIn": "Totals in {currency}",
+    "empty": {
+      "title": "Nothing to show yet",
+      "description": "Add revenue and expenses to see your totals and charts here."
+    }
+  },
+  "errors": {
+    "network": "Cannot reach the server. Check your connection and try again.",
+    "forbidden": "You are not allowed to do that.",
+    "notFound": "This item does not exist or is not yours.",
+    "sessionExpired": "Your session expired. Please try again.",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "server": "Something went wrong on the server. Please try again later.",
+    "generic": "The request failed."
+  }
+}
