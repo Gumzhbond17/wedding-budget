@@ -245,3 +245,14 @@ describe('receipts', function () {
         $this->put('/storage/payments/1/receipt.png?upload=1')->assertNotFound();
     });
 });
+
+it('lists an expense\'s payments in the order they were made', function () {
+    [$user, $wedding, $expense] = usdExpenseOwner();
+    $balance = ExpensePayment::factory()->for($expense)->create(['paid_date' => '2026-11-10']);
+    $deposit = ExpensePayment::factory()->for($expense)->create(['paid_date' => '2026-10-02']);
+    $sameDay = ExpensePayment::factory()->for($expense)->create(['paid_date' => '2026-11-10']);
+
+    $response = $this->actingAs($user)->getJson(route('v1.weddings.expenses.payments.index', [$wedding, $expense]))->assertOk();
+
+    expect($response->json('data.*.id'))->toBe([$deposit->id, $balance->id, $sameDay->id]);
+});

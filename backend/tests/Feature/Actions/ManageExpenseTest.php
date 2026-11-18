@@ -115,3 +115,18 @@ it('keeps the derived status when the user re-books a paid expense', function ()
 
     expect($expense->refresh()->status)->toBe(ExpenseStatus::Paid);
 });
+
+it('defaults the currency to the wedding base currency at rate 1', function () {
+    $wedding = Wedding::factory()->create(['base_currency' => Currency::THB]);
+
+    $expense = app(ManageExpense::class)->create($wedding, [
+        'category_id' => Category::factory()->for($wedding)->create()->id,
+        'description' => 'Flowers',
+        'estimated_amount' => '15000.00',
+    ]);
+
+    expect($expense->refresh())
+        ->currency->toBe(Currency::THB)
+        ->exchange_rate->toBe('1.00000000')
+        ->base_estimated_amount->toBe('15000.00');
+});

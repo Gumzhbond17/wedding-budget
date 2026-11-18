@@ -94,3 +94,18 @@ it('updates and soft deletes revenue', function () {
     $this->deleteJson(route('v1.weddings.revenues.destroy', [$wedding, $revenue]))->assertNoContent();
     expect($revenue->refresh()->trashed())->toBeTrue();
 });
+
+it('re-converts a corrected amount at the original rate snapshot', function () {
+    [$user, $wedding] = revenueOwner();
+    ExchangeRate::factory()->for($wedding)->create(['rate' => '23000.00000000', 'effective_date' => '2026-11-01']);
+    $revenue = Revenue::factory()->for($wedding)->inCurrency(Currency::USD, '21850.00000000', '3000.00')->received()
+        ->create(['received_date' => '2026-10-05']);
+
+    $this->actingAs($user)->patchJson(route('v1.weddings.revenues.update', [$wedding, $revenue]), [
+        'amount' => '3200.00', 'exchange_rate' => '1', 'base_amount' => '1.00',
+    ])->assertOk()
+        ->assertJsonPath('data.exchange_rate', '21850.00000000')
+        ->assertJsonPath('data.base_amount', ['amount' => '69920000.00', 'currency' => 'LAK']);
+
+    expect($revenue->refresh()->base_amount)->toBe('69920000.00');
+});

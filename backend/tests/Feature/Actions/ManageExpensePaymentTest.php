@@ -8,6 +8,8 @@ use App\Models\ExchangeRate;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
 use App\Models\Wedding;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -167,4 +169,29 @@ it('keeps cached totals equal to a fresh SUM of payments after any sequence of c
             ->paid_amount->toBe($fresh[$expense->id]->paid)
             ->base_paid_amount->toBe($fresh[$expense->id]->base_paid);
     }
+});
+
+it('deletes the replaced receipt once the new one is saved', function () {
+    Storage::fake('receipts');
+    $payment = pay(usdVenue(), '2000.00', '2026-10-20');
+    $actions = app(ManageExpensePayment::class);
+    $first = $actions->attachReceipt($payment, UploadedFile::fake()->create('deposit.pdf', 10, 'application/pdf'))->receipt_path;
+
+    $second = $actions->attachReceipt($payment, UploadedFile::fake()->create('deposit-signed.pdf', 10, 'application/pdf'))->receipt_path;
+
+    expect($payment->refresh()->receipt_path)->toBe($second)->not->toBe($first);
+    Storage::disk('receipts')->assertMissing($first);
+    Storage::disk('receipts')->assertExists($second);
+});
+
+it('removes the stored file when the receipt cannot be recorded, leaving no orphan', function () {
+    Storage::fake('receipts');
+    $payment = pay(usdVenue(), '2000.00', '2026-10-20');
+    // Deleted by a concurrent request between the policy check and the upload.
+    ExpensePayment::query()->whereKey($payment->id)->delete();
+
+    expect(fn () => app(ManageExpensePayment::class)->attachReceipt($payment, UploadedFile::fake()->create('deposit.pdf', 10, 'application/pdf')))
+        ->toThrow(ModelNotFoundException::class);
+
+    expect(Storage::disk('receipts')->allFiles())->toBe([]);
 });

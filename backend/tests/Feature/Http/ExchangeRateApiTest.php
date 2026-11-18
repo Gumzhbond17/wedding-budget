@@ -44,3 +44,14 @@ it('updates and deletes a rate', function () {
         ->assertOk()->assertJsonPath('data.rate', '22000.00000000');
     $this->deleteJson(route('v1.weddings.exchange-rates.destroy', [$wedding, $rate]))->assertNoContent();
 });
+
+it('lists only the wedding\'s own rates, newest effective date first', function () {
+    [$user, $wedding] = rateOwner();
+    $october = ExchangeRate::factory()->for($wedding)->create(['effective_date' => '2026-10-01']);
+    $november = ExchangeRate::factory()->for($wedding)->create(['effective_date' => '2026-11-01']);
+    ExchangeRate::factory()->create(['effective_date' => '2026-12-01']);
+
+    $response = $this->actingAs($user)->getJson(route('v1.weddings.exchange-rates.index', $wedding))->assertOk();
+
+    expect($response->json('data.*.id'))->toBe([$november->id, $october->id]);
+});

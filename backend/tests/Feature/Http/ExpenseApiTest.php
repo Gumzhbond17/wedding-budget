@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Currency;
+use App\Enums\ExpenseStatus;
 use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Expense;
@@ -86,4 +88,33 @@ it('soft deletes an expense', function () {
     $this->actingAs($user)->deleteJson(route('v1.weddings.expenses.destroy', [$wedding, $expense]))->assertNoContent();
 
     expect($expense->refresh()->trashed())->toBeTrue();
+});
+
+it('updates an expense at its snapshotted rate, ignoring client-sent rates and base amounts', function () {
+    [$user, $wedding] = expenseOwner();
+    // A newer rate must not leak into an existing record whose currency did not change.
+    ExchangeRate::factory()->for($wedding)->create(['rate' => '23000.00000000', 'effective_date' => '2026-11-01']);
+    $expense = Expense::factory()->for($wedding)->inCurrency(Currency::USD, '21850.00000000', '6500.00')->create();
+
+    $this->actingAs($user)->patchJson(route('v1.weddings.expenses.update', [$wedding, $expense]), [
+        'actual_amount' => '6800.00', 'exchange_rate' => '1', 'base_actual_amount' => '1.00',
+    ])->assertOk()
+        ->assertJsonPath('data.actual_amount', ['amount' => '6800.00', 'currency' => 'USD'])
+        ->assertJsonPath('data.exchange_rate', '21850.00000000')
+        ->assertJsonPath('data.base_actual_amount', ['amount' => '148580000.00', 'currency' => 'LAK']);
+
+    expect($expense->refresh())
+        ->exchange_rate->toBe('21850.00000000')
+        ->base_actual_amount->toBe('148580000.00');
+});
+
+it('rejects a status derived from payments on update with 422', function () {
+    [$user, $wedding] = expenseOwner();
+    $expense = Expense::factory()->for($wedding)->create();
+
+    $this->actingAs($user)->patchJson(route('v1.weddings.expenses.update', [$wedding, $expense]), ['status' => 'paid'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('status');
+
+    expect($expense->refresh()->status)->toBe(ExpenseStatus::Planned);
 });

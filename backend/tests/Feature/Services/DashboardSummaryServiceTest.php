@@ -3,6 +3,7 @@
 use App\Enums\BudgetHealth;
 use App\Enums\Currency;
 use App\Models\Expense;
+use App\Models\ExpensePayment;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use App\Services\DashboardSummaryService;
@@ -225,3 +226,36 @@ it('runs a fixed number of queries whatever the number of records', function () 
 
     expect($count())->toBe(DashboardSummaryService::QUERY_COUNT)->toBe(5);
 });
+
+/*
+ * Both moments fall on 30 November in UTC (16:30 and 17:30), so a server-clock "today" would
+ * give the same answer twice. In Vientiane (UTC+7) they straddle midnight and a month boundary.
+ * "This month" is the cash-flow row of the as_of month, which the dashboard highlights.
+ */
+it('switches today, the 30-day window and this month at Vientiane midnight', function (string $vientianeTime, string $today, array $upcoming, string $outflowThisMonth) {
+    $serverTimezone = date_default_timezone_get();
+    date_default_timezone_set('UTC');
+
+    try {
+        $this->travelTo(CarbonImmutable::parse($vientianeTime, DashboardSummaryService::TIMEZONE));
+        $wedding = Wedding::factory()->create();
+        foreach (['2026-11-29', '2026-11-30', '2026-12-01', '2026-12-30', '2026-12-31', '2027-01-01'] as $date) {
+            Expense::factory()->for($wedding)->create(['due_date' => $date, 'description' => $date]);
+        }
+        $paidUpFront = Expense::factory()->for($wedding)->create(['due_date' => null, 'estimated_amount' => '10000000.00']);
+        ExpensePayment::factory()->for($paidUpFront)->create(['amount' => '1500000.00', 'paid_date' => '2026-11-30']);
+        ExpensePayment::factory()->for($paidUpFront)->create(['amount' => '2500000.00', 'paid_date' => '2026-12-01']);
+
+        $dashboard = app(DashboardSummaryService::class)->summarize($wedding);
+        $thisMonth = collect($dashboard['cash_flow'])->firstWhere('month', substr($dashboard['as_of'], 0, 7));
+
+        expect($dashboard['as_of'])->toBe($today)
+            ->and($dashboard['upcoming_payments']->pluck('description')->all())->toBe($upcoming)
+            ->and($thisMonth['outflow'])->toBe($outflowThisMonth);
+    } finally {
+        date_default_timezone_set($serverTimezone);
+    }
+})->with([
+    '23:30 on the last day of the month' => ['2026-11-30 23:30', '2026-11-30', ['2026-11-30', '2026-12-01', '2026-12-30'], '1500000.00'],
+    '00:30 on the first day of the next month' => ['2026-12-01 00:30', '2026-12-01', ['2026-12-01', '2026-12-30', '2026-12-31'], '2500000.00'],
+]);
