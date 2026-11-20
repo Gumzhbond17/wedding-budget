@@ -51,13 +51,11 @@ export default defineNuxtConfig({
   fonts: {
     families: [
       /*
-       * Lao script fallback for Public Sans (see main.css). Declared here because
-       * @nuxt/fonts only auto-resolves the first family of a font stack. "global" emits the
-       * @font-face rules up front. Only the Lao subset: Latin comes from Public Sans, and
-       * its unicode-range keeps the browser from downloading the file until a Lao
-       * character is on screen.
+       * Google Sans comes from the Google Fonts @import in main.css. Without this entry,
+       * @nuxt/fonts (bundled with Nuxt UI) would see the family in --font-sans and also
+       * download and self-host it, so the browser would get two sets of @font-face rules.
        */
-      { name: 'Noto Sans Lao', global: true, weights: [400, 500, 600, 700], subsets: ['lao'] }
+      { name: 'Google Sans', provider: 'none' }
     ]
   },
 

@@ -73,11 +73,7 @@ async function confirm(): Promise<void> {
           :label="$t('revenues.fields.receivedDate')"
           required
         >
-          <UInput
-            v-model="receivedDate"
-            type="date"
-            class="w-full"
-          />
+          <DateInput v-model="receivedDate" />
         </UFormField>
 
         <RatePreview

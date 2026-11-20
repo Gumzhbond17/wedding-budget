@@ -68,23 +68,24 @@ function change(key: keyof ListFilters, value: string | undefined): void {
       :label="$t('filters.from', { field: dateLabel })"
       :ui="{ label: 'text-xs text-muted' }"
     >
-      <UInput
+      <DateInput
         :model-value="filters.date_from ?? ''"
-        type="date"
-        class="w-full"
-        @change="change('date_from', ($event.target as HTMLInputElement).value || undefined)"
+        :max="filters.date_to"
+        clearable
+        class="md:w-44"
+        @update:model-value="change('date_from', $event || undefined)"
       />
     </UFormField>
     <UFormField
       :label="$t('filters.to', { field: dateLabel })"
       :ui="{ label: 'text-xs text-muted' }"
     >
-      <UInput
+      <DateInput
         :model-value="filters.date_to ?? ''"
-        type="date"
         :min="filters.date_from"
-        class="w-full"
-        @change="change('date_to', ($event.target as HTMLInputElement).value || undefined)"
+        clearable
+        class="md:w-44"
+        @update:model-value="change('date_to', $event || undefined)"
       />
     </UFormField>
     <UButton

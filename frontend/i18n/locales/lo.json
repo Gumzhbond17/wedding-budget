@@ -7,6 +7,8 @@
   "common": {
     "actions": "ຈັດການ",
     "cancel": "ຍົກເລີກ",
+    "clearDate": "ລຶບວັນທີ",
+    "pickDate": "ເລືອກວັນທີ",
     "delete": "ລຶບ",
     "deleteItem": "ລຶບ {name}",
     "edit": "ແກ້ໄຂ",

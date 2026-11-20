@@ -6,6 +6,8 @@
   "common": {
     "actions": "Actions",
     "cancel": "Cancel",
+    "clearDate": "Clear date",
+    "pickDate": "Pick a date",
     "delete": "Delete",
     "deleteItem": "Delete {name}",
     "edit": "Edit",

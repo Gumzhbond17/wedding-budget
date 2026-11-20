@@ -99,10 +99,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
           :label="$t('weddings.form.weddingDate')"
           name="wedding_date"
         >
-          <UInput
+          <DateInput
             v-model="state.wedding_date"
-            type="date"
-            class="w-full"
+            clearable
           />
         </UFormField>
 

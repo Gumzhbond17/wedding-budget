@@ -248,10 +248,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
             :label="$t('expenses.fields.dueDate')"
             name="due_date"
           >
-            <UInput
+            <DateInput
               v-model="state.due_date"
-              type="date"
-              class="w-full"
+              clearable
             />
           </UFormField>
         </div>

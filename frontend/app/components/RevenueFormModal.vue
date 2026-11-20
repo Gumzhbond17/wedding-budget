@@ -233,10 +233,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
             name="received_date"
             required
           >
-            <UInput
+            <DateInput
               v-model="state.received_date"
-              type="date"
-              class="w-full"
+              clearable
             />
           </UFormField>
 
@@ -245,10 +244,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
             :label="$t('revenues.fields.expectedDate')"
             name="expected_date"
           >
-            <UInput
+            <DateInput
               v-model="state.expected_date"
-              type="date"
-              class="w-full"
+              clearable
             />
           </UFormField>
         </div>

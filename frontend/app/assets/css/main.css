@@ -1,13 +1,17 @@
+/*
+ * Google Sans, loaded from Google Fonts at runtime. A remote @import must come before every
+ * other rule. The stylesheet splits the font by script with unicode-range (latin, lao, ...),
+ * so the browser only downloads the subsets for characters on screen: one family covers
+ * both English and Lao. Trade-off: each visitor's browser contacts Google, and text falls
+ * back to the system sans-serif while offline or until the font arrives (display=swap).
+ */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap');
 @import "tailwindcss";
 @import "@nuxt/ui";
+@import "flatpickr/dist/flatpickr.css";
 
 @theme static {
-  /*
-   * Public Sans has no Lao glyphs, so the browser takes Lao characters from Noto Sans Lao
-   * (per glyph, in the same line). @nuxt/fonts (bundled with Nuxt UI) downloads both at
-   * build time and serves them from this app: no request to Google at runtime.
-   */
-  --font-sans: 'Public Sans', 'Noto Sans Lao', sans-serif;
+  --font-sans: 'Google Sans', sans-serif;
 
   --color-green-50: #EFFDF5;
   --color-green-100: #D9FBE8;
@@ -20,4 +24,99 @@
   --color-green-800: #016538;
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
+}
+
+/*
+ * flatpickr theme (DateInput). The stock stylesheet is light-only with hard-coded blue, so
+ * these rules map it onto Nuxt UI's tokens: the calendar follows the primary color and
+ * dark mode like every other control. Selectors repeat the stock ones at equal specificity
+ * and come later in the file, so they win without !important.
+ */
+.flatpickr-calendar,
+.flatpickr-calendar.inline {
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  color: var(--ui-text);
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: var(--ui-text-highlighted);
+  fill: var(--ui-text-highlighted);
+  font-weight: 600;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+  background: var(--ui-bg);
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover,
+.numInputWrapper:hover {
+  background: var(--ui-bg-elevated);
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+  color: var(--ui-text-muted);
+  fill: var(--ui-text-muted);
+}
+
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+  fill: var(--ui-primary);
+}
+
+.numInputWrapper span.arrowUp::after {
+  border-bottom-color: var(--ui-text-muted);
+}
+
+.numInputWrapper span.arrowDown::after {
+  border-top-color: var(--ui-text-muted);
+}
+
+span.flatpickr-weekday {
+  color: var(--ui-text-muted);
+  font-weight: 500;
+}
+
+.flatpickr-day {
+  color: var(--ui-text);
+  border-radius: var(--ui-radius);
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus,
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover {
+  background: var(--ui-bg-elevated);
+  border-color: var(--ui-bg-elevated);
+}
+
+.flatpickr-day.today {
+  border-color: var(--ui-primary);
+}
+
+.flatpickr-day.today:hover,
+.flatpickr-day.today:focus {
+  background: var(--ui-bg-elevated);
+  border-color: var(--ui-primary);
+  color: var(--ui-text-highlighted);
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: var(--ui-text-inverted);
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay,
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+  color: var(--ui-text-dimmed);
 }

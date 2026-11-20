@@ -20,6 +20,7 @@
     "@nuxtjs/i18n": "10.6.0",
     "@pinia/nuxt": "1.0.3",
     "chart.js": "^4.6.1",
+    "flatpickr": "^4.6.13",
     "nuxt": "^4.6.3",
     "pinia": "4.1.0",
     "tailwindcss": "^4.3.3",

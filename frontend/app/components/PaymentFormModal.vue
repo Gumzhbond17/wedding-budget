@@ -132,11 +132,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
           name="paid_date"
           required
         >
-          <UInput
+          <DateInput
             v-model="state.paid_date"
-            type="date"
             :max="today"
-            class="w-full"
           />
         </UFormField>
 

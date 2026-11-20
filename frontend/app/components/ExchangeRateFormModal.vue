@@ -136,11 +136,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>): Promise<void> {
           name="effective_date"
           required
         >
-          <UInput
-            v-model="state.effective_date"
-            type="date"
-            class="w-full"
-          />
+          <DateInput v-model="state.effective_date" />
         </UFormField>
       </UForm>
     </template>
