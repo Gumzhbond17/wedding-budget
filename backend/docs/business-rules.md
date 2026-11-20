@@ -100,8 +100,11 @@ Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{we
   `used_percent` = committed / planned (2 decimals, `null` without a plan). **Health** compares
   committed with planned: green < 90%, amber 90–100% (both inclusive), red > 100%; no plan → no
   health; a plan of 0 is red as soon as anything is committed.
+- **Unplanned spending**: expense categories with committed > 0 and no plan (`planned_amount`
+  null). They have no health and are never listed as over budget; a plan of 0 is a plan (red).
 - **Expense breakdown**: committed per category (categories with nothing committed omitted),
-  with a share rounded per slice to 2 decimals (shares may add up to 99.99–100.01).
+  largest committed first (ties by name), with a share rounded per slice to 2 decimals (shares
+  may add up to 99.99–100.01).
 - **Monthly cash flow**: inflow = received revenue by `received_date`; outflow = payments by
   `paid_date` at their own rate snapshot (payments on cancelled expenses included). Months
   between the first and last movement are filled with zeros; `cumulative` ends at the net cash
@@ -118,8 +121,8 @@ Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{we
   every wedding endpoint, limited to 10 per minute per user, soft-deleted records excluded.
 - Streamed in chunks, UTF-8 with a BOM (Excel shows Lao text correctly), CRLF line endings.
 - File name `<wedding name>-<revenues|expenses>-<YYYY-MM-DD>.csv` (date in Lao time). Lao text is
-  kept through `filename*` (RFC 6266); characters file systems refuse and `%` are dropped, spaces
-  become `-`. The ASCII `filename` fallback is a slug of the name, or `wedding-<id>` when nothing
+  kept through `filename*` (RFC 6266); `/ \ : * ? " < > |`, control characters and `%` are
+  replaced with `-`, and runs of spaces, dots and hyphens become one `-`. The ASCII `filename` fallback is a slug of the name, or `wedding-<id>` when nothing
   ASCII is left. `Content-Disposition` is exposed through CORS so the SPA can name the download.
 - Each row has the original amount, currency, snapshotted rate and base amount(s); expenses also
   carry paid and outstanding amounts with the outstanding basis.

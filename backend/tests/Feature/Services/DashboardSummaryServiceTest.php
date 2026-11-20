@@ -2,6 +2,7 @@
 
 use App\Enums\BudgetHealth;
 use App\Enums\Currency;
+use App\Models\Category;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
 use App\Models\Revenue;
@@ -121,15 +122,41 @@ it('compares each expense category with its plan', function () {
     ]);
 });
 
-it('breaks committed expenses down by category', function () {
+it('breaks committed expenses down by category, largest first', function () {
     $dashboard = app(DashboardSummaryService::class)->summarize(dashboardFixture()['wedding']);
 
     expect(collect($dashboard['expense_breakdown'])->map(fn (array $row) => [$row['name'], $row['committed'], $row['share_percent']])->all())->toBe([
-        ['Attire', '10925000.00', '5.53'],
+        ['Venue', '95000000.00', '48.11'],
         ['Catering', '71920000.00', '36.43'],
         ['Photography & Video', '19600000.00', '9.93'],
-        ['Venue', '95000000.00', '48.11'],
+        ['Attire', '10925000.00', '5.53'],
     ]);
+});
+
+it('orders equal slices by name', function () {
+    $wedding = Wedding::factory()->create();
+    foreach (['Venue', 'Catering'] as $name) {
+        $category = Category::factory()->expense()->for($wedding)->create(['name' => $name]);
+        Expense::factory()->for($wedding)->for($category)->create(['estimated_amount' => '1000000.00']);
+    }
+
+    expect(array_column(app(DashboardSummaryService::class)->summarize($wedding)['expense_breakdown'], 'name'))->toBe(['Catering', 'Venue']);
+});
+
+it('lists spending in categories without a plan apart from over-budget ones', function () {
+    $wedding = Wedding::factory()->create();
+    $unplanned = Category::factory()->expense()->for($wedding)->create(['name' => 'Attire', 'planned_amount' => null]);
+    $zeroPlan = Category::factory()->expense()->for($wedding)->create(['name' => 'Gifts', 'planned_amount' => '0.00']);
+    Category::factory()->expense()->for($wedding)->create(['name' => 'Ceremony', 'planned_amount' => null]);
+    Expense::factory()->for($wedding)->for($unplanned)->create(['estimated_amount' => '2500000.00']);
+    Expense::factory()->for($wedding)->for($zeroPlan)->create(['estimated_amount' => '500000.00']);
+
+    $dashboard = app(DashboardSummaryService::class)->summarize($wedding);
+
+    // Ceremony has neither a plan nor spending; Gifts has a plan of 0, so it is over budget instead.
+    expect($dashboard['unplanned_spending'])->toBe([['id' => $unplanned->id, 'name' => 'Attire', 'committed' => '2500000.00']])
+        ->and(collect($dashboard['categories'])->firstWhere('name', 'Attire')['health'])->toBeNull()
+        ->and(collect($dashboard['categories'])->firstWhere('name', 'Gifts')['health'])->toBe(BudgetHealth::Red);
 });
 
 it('builds a continuous monthly cash flow from received revenue and payments', function () {

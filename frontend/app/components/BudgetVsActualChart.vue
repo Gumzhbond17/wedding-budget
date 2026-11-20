@@ -18,6 +18,9 @@ const { t } = useI18n()
 const { format } = useCurrency()
 const palette = useChartTheme()
 
+/** Chart width (px) below which category labels are shortened. */
+const NARROW_CHART = 480
+
 // Categories with a plan or with something committed; untouched ones would only add empty rows.
 const rows = computed(() => props.categories.filter(category => category.planned !== null || !isZero(category.committed)))
 
@@ -56,13 +59,23 @@ const options = computed<ChartOptions<'bar'>>(() => ({
     },
     y: {
       grid: { display: false },
-      ticks: { color: palette.value.text, autoSkip: false }
+      ticks: {
+        color: palette.value.text,
+        autoSkip: false,
+        // On a phone-width chart long names would take half the width; the tooltip keeps them whole.
+        callback(_value, index) {
+          const name = rows.value[index]?.name ?? ''
+
+          return this.chart.width < NARROW_CHART ? truncateLabel(name) : name
+        }
+      }
     }
   },
   plugins: {
     legend: { display: false },
     tooltip: {
       callbacks: {
+        title: (items: TooltipItem<'bar'>[]) => rows.value[items[0]!.dataIndex]!.name,
         // Exact amounts from the API strings, never the plotted numbers.
         label: (item: TooltipItem<'bar'>) => {
           const category = rows.value[item.dataIndex]!

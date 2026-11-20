@@ -124,12 +124,13 @@ final class RecordsCsvExporter
 
     /**
      * The wedding name as a file name part, Lao text kept ("ງານແຕ່ງ Vanh & Noy" → "ງານແຕ່ງ-Vanh-&-Noy").
-     * Characters that Windows or macOS refuse in file names, control characters and "%" (which
-     * Symfony refuses in a disposition) are dropped; runs of spaces become one hyphen.
+     * Characters Windows refuses in file names (/ \ : * ? " < > |), control and other invisible
+     * characters, and "%" (which Symfony refuses in a disposition) are replaced with a hyphen;
+     * runs of hyphens, dots and spaces become one hyphen ("A/B: 100%" → "A-B-100").
      */
     public static function fileNamePart(string $weddingName, int $weddingId): string
     {
-        $name = preg_replace('/[\\\\\/:*?"<>|%\p{C}]+/u', '', $weddingName) ?? '';
+        $name = preg_replace('/[\\\\\/:*?"<>|%\p{C}]/u', '-', $weddingName) ?? '';
         $name = trim(preg_replace('/[\s.-]+/u', '-', $name) ?? '', '-');
         $name = mb_substr($name, 0, 80);
 

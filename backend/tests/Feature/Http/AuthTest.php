@@ -74,6 +74,13 @@ it('rejects guests on the current user endpoint', function () {
     $this->getJson(route('v1.auth.user'))->assertUnauthorized();
 });
 
+it('answers guests 401 JSON even without an Accept header, never a login redirect', function () {
+    // e.g. curl, a crawler or a health probe; there is no login route to redirect to.
+    $this->get(route('v1.auth.user'))
+        ->assertUnauthorized()
+        ->assertExactJson(['message' => 'Unauthenticated.']);
+});
+
 it('throttles registration attempts from one IP', function () {
     foreach (range(1, 20) as $attempt) {
         $this->postJson(route('v1.auth.register'), ['email' => "user{$attempt}@example.com"])->assertUnprocessable();

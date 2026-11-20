@@ -305,6 +305,51 @@ const asOf = computed(() => (dashboard.value ? d(dateForDisplay(dashboard.value.
               </li>
             </ul>
           </UCard>
+
+          <!-- Spending without a plan has nothing to be over: listed apart, never flagged red. -->
+          <UCard v-if="dashboard.unplanned_spending.length">
+            <template #header>
+              <div class="space-y-1">
+                <h2 class="font-semibold text-highlighted">
+                  {{ $t('dashboard.unplanned.title') }}
+                </h2>
+                <p class="text-xs text-muted">
+                  {{ $t('dashboard.unplanned.description') }}
+                </p>
+              </div>
+            </template>
+
+            <ul class="-my-2 divide-y divide-default">
+              <li
+                v-for="category in dashboard.unplanned_spending"
+                :key="category.category_id"
+              >
+                <ULink
+                  :to="{ path: `/weddings/${weddingId}/expenses`, query: { category_id: String(category.category_id) } }"
+                  class="flex flex-wrap items-center justify-between gap-2 py-2 hover:bg-elevated/50"
+                >
+                  <span class="font-medium text-highlighted">{{ category.name }}</span>
+                  <span class="flex items-center gap-2 text-sm">
+                    <BudgetHealthBadge :health="null" />
+                    <span class="tabular-nums font-medium text-highlighted">{{ formatMoneyObject(category.committed) }}</span>
+                  </span>
+                </ULink>
+              </li>
+            </ul>
+
+            <template #footer>
+              <ULink
+                :to="`/weddings/${weddingId}/settings/categories`"
+                class="inline-flex items-center gap-1 text-sm font-medium text-primary"
+              >
+                {{ $t('dashboard.cards.setCategoryBudgets') }}
+                <UIcon
+                  name="i-lucide-arrow-right"
+                  class="size-4"
+                />
+              </ULink>
+            </template>
+          </UCard>
         </section>
 
         <ExpenseBreakdownChart :slices="dashboard.expense_breakdown" />

@@ -32,6 +32,17 @@ export function compactMoney(value: number, currency: CurrencyCode): string {
   return (value < 0 ? '-' : '') + symbol + compact
 }
 
+/**
+ * Shortens an axis label to at most `max` characters with an ellipsis ("Photography & Video"
+ * → "Photography…"). Counts grapheme clusters, not UTF-16 units, so a Lao vowel or tone mark
+ * is never split from its consonant. The full name stays in the tooltip.
+ */
+export function truncateLabel(label: string, max = 12): string {
+  const graphemes = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(label)].map(part => part.segment)
+
+  return graphemes.length <= max ? label : `${graphemes.slice(0, max - 1).join('').trimEnd()}…`
+}
+
 /** -1, 0 or 1, read from the string itself. */
 export function signOf(amount: DecimalString): -1 | 0 | 1 {
   if (!DECIMAL.test(amount)) {

@@ -27,7 +27,10 @@ it('returns the dashboard with every amount tagged with its currency', function 
         ->assertJsonPath('data.categories.0.planned', null)
         ->assertJsonPath('data.categories.3.health', 'red')
         ->assertJsonPath('data.categories.3.used_percent', '130.67')
-        ->assertJsonPath('data.expense_breakdown.3.share_percent', '48.11')
+        ->assertJsonPath('data.expense_breakdown.0.share_percent', '48.11')
+        ->assertJsonPath('data.unplanned_spending.0.name', 'Attire')
+        ->assertJsonPath('data.unplanned_spending.0.committed', ['amount' => '10925000.00', 'currency' => 'LAK'])
+        ->assertJsonCount(1, 'data.unplanned_spending')
         ->assertJsonPath('data.cash_flow.4.cumulative', ['amount' => '13600000.00', 'currency' => 'LAK'])
         ->assertJsonPath('data.upcoming_payments', [
             [

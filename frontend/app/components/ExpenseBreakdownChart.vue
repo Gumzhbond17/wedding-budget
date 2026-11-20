@@ -4,11 +4,11 @@ import { Doughnut } from 'vue-chartjs'
 import type { Dashboard } from '~/types/api'
 
 /**
- * Committed expenses per category (doughnut), largest share first. The eight largest take the
- * categorical colours in fixed order and the rest share one neutral grey: grouping them into
- * one "Other" slice would need adding amounts here, which the dashboard never does. Sorting
- * compares the API's share percentages, not amounts. The list beside the chart names every
- * slice with its amount and share, so identity never rests on colour.
+ * Committed expenses per category (doughnut), largest first as the API sends them. The eight
+ * largest take the categorical colours in fixed order and the rest share one neutral grey:
+ * grouping them into one "Other" slice would need adding amounts here, which the dashboard
+ * never does. The list beside the chart names every slice with its amount and share, so
+ * identity never rests on colour.
  */
 const props = defineProps<{
   slices: Dashboard['expense_breakdown']
@@ -18,14 +18,12 @@ const { t } = useI18n()
 const { format } = useCurrency()
 const palette = useChartTheme()
 
-const ordered = computed(() => [...props.slices].sort((a, b) => Number(b.share_percent) - Number(a.share_percent)))
-
-const colors = computed(() => ordered.value.map((_slice, index) => palette.value.series[index] ?? palette.value.neutral))
+const colors = computed(() => props.slices.map((_slice, index) => palette.value.series[index] ?? palette.value.neutral))
 
 const data = computed<ChartData<'doughnut'>>(() => ({
-  labels: ordered.value.map(slice => slice.name),
+  labels: props.slices.map(slice => slice.name),
   datasets: [{
-    data: ordered.value.map(slice => chartValue(slice.committed.amount)),
+    data: props.slices.map(slice => chartValue(slice.committed.amount)),
     backgroundColor: colors.value,
     // A 2px surface-coloured gap between slices.
     borderColor: palette.value.surface,
@@ -43,7 +41,7 @@ const options = computed<ChartOptions<'doughnut'>>(() => ({
     tooltip: {
       callbacks: {
         label: (item: TooltipItem<'doughnut'>) => {
-          const slice = ordered.value[item.dataIndex]!
+          const slice = props.slices[item.dataIndex]!
 
           return `${format(slice.committed)} · ${t('dashboard.breakdown.share', { percent: slice.share_percent })}`
         }
@@ -83,7 +81,7 @@ const options = computed<ChartOptions<'doughnut'>>(() => ({
 
       <ul class="space-y-1.5 text-sm">
         <li
-          v-for="(slice, index) in ordered"
+          v-for="(slice, index) in slices"
           :key="slice.category_id"
           class="flex items-center gap-2"
         >

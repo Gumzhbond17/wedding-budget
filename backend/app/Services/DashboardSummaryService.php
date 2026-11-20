@@ -45,6 +45,7 @@ final class DashboardSummaryService
      *     per_currency: list<array{currency: Currency, revenue: array<string, array{amount: string, base: string}>, expenses: array<string, array{amount: string, base: string}>}>,
      *     categories: list<array{id: int, name: string, planned: ?string, estimated: string, actual: string, paid: string, committed: string, used_percent: ?string, health: ?BudgetHealth}>,
      *     expense_breakdown: list<array{category_id: int, name: string, committed: string, share_percent: string}>,
+     *     unplanned_spending: list<array{id: int, name: string, committed: string}>,
      *     cash_flow: list<array{month: string, inflow: string, outflow: string, net: string, cumulative: string}>,
      *     upcoming_payments: Collection<int, Expense>,
      * }
@@ -210,7 +211,7 @@ final class DashboardSummaryService
      * already exceed the plan turns red before the invoices arrive.
      *
      * @param  Collection<int, object>  $rows
-     * @return array{categories: list<array<string, mixed>>, expense_breakdown: list<array<string, mixed>>}
+     * @return array{categories: list<array<string, mixed>>, expense_breakdown: list<array<string, mixed>>, unplanned_spending: list<array{id: int, name: string, committed: string}>}
      */
     private function categoryFigures(Collection $rows, string $totalCommitted): array
     {
@@ -245,7 +246,17 @@ final class DashboardSummaryService
             }
         }
 
-        return ['categories' => $categories, 'expense_breakdown' => $breakdown];
+        // Largest slice first (ties by name), so the chart and its legend read in order of size.
+        usort($breakdown, fn (array $a, array $b): int => bccomp($b['committed'], $a['committed'], 2) ?: strcmp($a['name'], $b['name']));
+
+        // Spending without a plan has no health (nothing to compare with), so it is listed apart
+        // instead of being flagged over budget. A plan of 0 is a plan: that category is red.
+        $unplanned = array_values(array_map(
+            fn (array $category): array => ['id' => $category['id'], 'name' => $category['name'], 'committed' => $category['committed']],
+            array_filter($categories, fn (array $category): bool => $category['planned'] === null && bccomp($category['committed'], '0', 2) > 0),
+        ));
+
+        return ['categories' => $categories, 'expense_breakdown' => $breakdown, 'unplanned_spending' => $unplanned];
     }
 
     /**

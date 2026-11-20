@@ -65,6 +65,11 @@ class DashboardResource extends JsonResource
                 'committed' => $money($slice['committed']),
                 'share_percent' => $slice['share_percent'],
             ], $this->resource['expense_breakdown']),
+            'unplanned_spending' => array_map(fn (array $category): array => [
+                'category_id' => $category['id'],
+                'name' => $category['name'],
+                'committed' => $money($category['committed']),
+            ], $this->resource['unplanned_spending']),
             'cash_flow' => array_map(fn (array $month): array => [
                 'month' => $month['month'],
                 'inflow' => $money($month['inflow']),

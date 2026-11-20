@@ -290,6 +290,10 @@
       "amounts": "{committed} of {planned}",
       "empty": "No category is over its budget."
     },
+    "unplanned": {
+      "title": "Unplanned spending",
+      "description": "Categories with expenses but no planned budget. Set a budget to track them."
+    },
     "perCurrency": {
       "title": "By currency",
       "revenueReceived": "Revenue received",

@@ -77,9 +77,24 @@ describe('translation keys', () => {
     expect(Object.keys(lookup(en, 'paymentMethod') as object).sort()).toEqual(['bank_transfer', 'cash', 'none', 'other'])
   })
 
+  // Top-level keys starting with "_" are file metadata (JSON has no comments), e.g. the draft note.
+  const laoKeys = leafKeys(lo).filter(key => key !== '' && !key.startsWith('_'))
+
   it('has no Lao key that English lacks', () => {
     const english = new Set(leafKeys(en))
 
-    expect(leafKeys(lo).filter(key => key !== '' && !english.has(key))).toEqual([])
+    expect(laoKeys.filter(key => !english.has(key))).toEqual([])
+  })
+
+  it('translates every English key into Lao', () => {
+    const lao = new Set(laoKeys)
+
+    expect(leafKeys(en).filter(key => !lao.has(key))).toEqual([])
+  })
+
+  it.each(leafKeys(en))('keeps the placeholders of "%s" in Lao', (key) => {
+    const placeholders = (text: unknown) => [...String(text).matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort()
+
+    expect(placeholders(lookup(lo, key))).toEqual(placeholders(lookup(en, key)))
   })
 })

@@ -78,7 +78,28 @@ it('names the file after the wedding and the export date, keeping Lao text', fun
         ->assertHeader('Content-Disposition', "attachment; filename={$fallback}-expenses-2026-11-18.csv; filename*=utf-8''".rawurlencode("{$fileName}-expenses-2026-11-18.csv"));
 })->with([
     'Lao name, no ASCII fallback left' => ['ງານແຕ່ງ ວັນ ແລະ ນ້ອຍ', 'ງານແຕ່ງ-ວັນ-ແລະ-ນ້ອຍ', 'wedding-{id}'],
-    'characters file systems refuse' => ['A/B: "100%" <party>?', 'AB-100-party', 'ab-100-party'],
+    'characters file systems refuse' => ['A/B: "100%" <party>?', 'A-B-100-party', 'ab-100-party'],
+]);
+
+it('replaces every character Windows refuses and control characters in file names', function (string $name, string $expected) {
+    expect(RecordsCsvExporter::fileNamePart($name, 7))->toBe($expected);
+})->with([
+    'slash' => ['Vanh/Noy', 'Vanh-Noy'],
+    'backslash' => ['Vanh\\Noy', 'Vanh-Noy'],
+    'colon' => ['Vanh:Noy', 'Vanh-Noy'],
+    'asterisk' => ['Vanh*Noy', 'Vanh-Noy'],
+    'question mark' => ['Vanh?Noy', 'Vanh-Noy'],
+    'double quote' => ['Vanh"Noy', 'Vanh-Noy'],
+    'less than' => ['Vanh<Noy', 'Vanh-Noy'],
+    'greater than' => ['Vanh>Noy', 'Vanh-Noy'],
+    'pipe' => ['Vanh|Noy', 'Vanh-Noy'],
+    'percent' => ['Vanh%Noy', 'Vanh-Noy'],
+    'tab, newline, NUL' => ["Vanh\t\n\0Noy", 'Vanh-Noy'],
+    'DEL and C1 controls' => ["Vanh\u{7F}\u{85}Noy", 'Vanh-Noy'],
+    'zero-width and bidi marks' => ["Vanh\u{200B}\u{202E}Noy", 'Vanh-Noy'],
+    'path traversal' => ['../../etc/passwd', 'etc-passwd'],
+    'Lao kept' => ['ງານແຕ່ງ: ວັນ*ນ້ອຍ', 'ງານແຕ່ງ-ວັນ-ນ້ອຍ'],
+    'nothing left' => ['/:*?', 'wedding-7'],
 ]);
 
 it('lets the SPA read the file name across origins', function () {

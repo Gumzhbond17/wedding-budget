@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Dashboard, Money } from '~/types/api'
-import { absolute, compactMoney, gapState, hasActivity, signOf } from '~/utils/dashboard'
+import { absolute, compactMoney, gapState, hasActivity, signOf, truncateLabel } from '~/utils/dashboard'
 
 const lak = (amount: string): Money => ({ amount, currency: 'LAK' })
 
@@ -15,6 +15,26 @@ describe('compactMoney (axis ticks only)', () => {
     [800, 'THB', '฿800']
   ] as const)('%d %s → %s', (value, currency, expected) => {
     expect(compactMoney(value, currency)).toBe(expected)
+  })
+})
+
+describe('truncateLabel', () => {
+  it.each([
+    ['Venue', 'Venue'],
+    ['Twelve chars', 'Twelve chars'],
+    ['Photography & Video', 'Photography…'],
+    ['Music & Entertainment', 'Music & Ent…'],
+    // Counted in grapheme clusters: "ດົ" and "ຕີ" are one character each.
+    ['ດົນຕີ ແລະ ຄວາມບັນເທີງ', 'ດົນຕີ ແລະ ຄວາ…']
+  ])('%s → %s', (label, expected) => {
+    expect(truncateLabel(label)).toBe(expected)
+  })
+
+  it('never splits a Lao consonant from its tone mark', () => {
+    // Each "ຕ່" is 2 UTF-16 units: cutting by units would strand the tone mark.
+    const label = 'ຕ່'.repeat(13)
+
+    expect(truncateLabel(label)).toBe(`${'ຕ່'.repeat(11)}…`)
   })
 })
 

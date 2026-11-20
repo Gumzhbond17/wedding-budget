@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // CSRF protection; everything else is treated as stateless.
         $middleware->statefulApi();
 
+        // API only, no login page: a guest is answered 401, never redirected. Without this, a
+        // request lacking "Accept: application/json" made the auth middleware look up a "login"
+        // route and fail with a 500.
+        $middleware->redirectGuestsTo(fn (): ?string => null);
+
         // Global rather than api-group only, so 404s for unknown routes are translated too.
         $middleware->append(SetLocaleFromAcceptLanguage::class);
     })

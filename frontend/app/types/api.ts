@@ -186,6 +186,12 @@ export interface Dashboard {
     committed: Money
     share_percent: DecimalString
   }>
+  /** Expense categories with committed spending but no planned budget (no health). */
+  unplanned_spending: Array<{
+    category_id: number
+    name: string
+    committed: Money
+  }>
   cash_flow: Array<{
     /** "YYYY-MM" */
     month: string
