@@ -42,7 +42,16 @@ const currency = computed<CurrencyCode>({
 const currencyItems = computed(() => options.value.filter(option => props.currencies.includes(option.value)))
 const input = useTemplateRef('input')
 const display = ref(toDisplay(value.value, currency.value))
-const pasteRejected = ref(false)
+/** Why the last paste was refused (shown under the field), or null. */
+const pasteProblem = ref<{ reason: 'invalid' | 'ambiguous' | 'fraction', text: string } | null>(null)
+const pasteMessage = computed(() => {
+  switch (pasteProblem.value?.reason) {
+    case 'ambiguous': return t('money.pasteAmbiguous', { text: pasteProblem.value.text })
+    case 'fraction': return t('money.pasteRejectedWhole')
+    case 'invalid': return t('money.pasteRejected')
+    default: return null
+  }
+})
 // The value this component last emitted; any other value came from outside.
 let emitted = value.value
 
@@ -69,29 +78,30 @@ function onInput(event: Event): void {
   const element = event.target as HTMLInputElement
   const state = applyTyping(element.value, element.selectionStart ?? element.value.length, currency.value)
 
-  pasteRejected.value = false
+  pasteProblem.value = null
   render(state.display, state.caret)
   emit(state.value)
 }
 
 function onPaste(event: ClipboardEvent): void {
   const text = event.clipboardData?.getData('text') ?? ''
-  const parsed = parsePastedAmount(text, currency.value)
+  const result = parsePastedAmount(text, currency.value)
 
   // A pasted amount replaces the field: merging "150.000.000" into half-typed digits
   // would produce a different number than either.
   event.preventDefault()
 
-  if (parsed === null) {
-    pasteRejected.value = true
+  if (!result.ok) {
+    // Refused rather than guessed: the field keeps its value.
+    pasteProblem.value = { reason: result.reason, text: text.trim() }
 
     return
   }
 
-  pasteRejected.value = false
-  const pasted = toDisplay(parsed, currency.value, { pad: false })
+  pasteProblem.value = null
+  const pasted = toDisplay(result.value, currency.value, { pad: false })
   render(pasted, pasted.length)
-  emit(parsed)
+  emit(result.value)
 }
 
 /** Shows the canonical form ("4,500.5" → "4,500.50") and emits it if it differs. */
@@ -146,6 +156,7 @@ watch(currency, settle)
         :disabled="disabled"
         :inputmode="CURRENCIES[currency].decimals === 0 ? 'numeric' : 'decimal'"
         autocomplete="off"
+        data-money
         class="min-w-0 flex-1"
         :ui="{ base: currencyEditable ? 'text-end tabular-nums' : 'pe-12 text-end tabular-nums' }"
         @input="onInput"
@@ -162,11 +173,11 @@ watch(currency, settle)
     </UFieldGroup>
 
     <p
-      v-if="pasteRejected"
+      v-if="pasteMessage"
       class="mt-1 text-sm text-error"
       role="status"
     >
-      {{ CURRENCIES[currency].decimals === 0 ? t('money.pasteRejectedWhole') : t('money.pasteRejected') }}
+      {{ pasteMessage }}
     </p>
   </div>
 </template>

@@ -4,18 +4,153 @@
     "tagline": "Plan your wedding budget in kip, dollars and baht."
   },
   "common": {
+    "actions": "Actions",
     "cancel": "Cancel",
     "delete": "Delete",
+    "deleteItem": "Delete {name}",
+    "edit": "Edit",
+    "editItem": "Edit {name}",
     "save": "Save"
   },
   "nav": {
     "account": "Account",
     "allWeddings": "All weddings",
     "dashboard": "Dashboard",
+    "expenses": "Expenses",
     "language": "Language",
     "logout": "Log out",
+    "revenues": "Revenue",
     "selectWedding": "Select a wedding",
     "settings": "Settings"
+  },
+  "fields": {
+    "amount": "Amount",
+    "category": "Category",
+    "chooseCategory": "Choose a category",
+    "date": "Date",
+    "notes": "Notes",
+    "paymentMethod": "Payment method",
+    "status": "Status"
+  },
+  "status": {
+    "planned": "Planned",
+    "booked": "Booked",
+    "partially_paid": "Partially paid",
+    "paid": "Paid",
+    "cancelled": "Cancelled",
+    "expected": "Expected",
+    "received": "Received"
+  },
+  "paymentMethod": {
+    "none": "Not specified",
+    "cash": "Cash",
+    "bank_transfer": "Bank transfer",
+    "other": "Other"
+  },
+  "filters": {
+    "allCategories": "All categories",
+    "allStatuses": "All statuses",
+    "allCurrencies": "All currencies",
+    "category": "Category",
+    "status": "Status",
+    "currency": "Currency",
+    "from": "{field} from",
+    "to": "{field} to",
+    "clear": "Clear filters",
+    "noMatch": "Nothing matches these filters"
+  },
+  "records": {
+    "deleteDescription": "It is removed from lists and totals. It stays in the history, so its category still counts as in use."
+  },
+  "revenues": {
+    "title": "Revenue",
+    "add": "Add revenue",
+    "empty": "No revenue yet",
+    "saved": "Revenue saved",
+    "deleted": "Revenue deleted",
+    "deleteTitle": "Delete \"{source}\"?",
+    "fields": {
+      "source": "Source",
+      "expectedDate": "Expected on",
+      "receivedDate": "Received on"
+    },
+    "form": {
+      "createTitle": "New revenue",
+      "editTitle": "Edit revenue",
+      "sourceHint": "Who it comes from",
+      "receivedDateRequired": "A received revenue needs the date it was received."
+    },
+    "markReceived": {
+      "action": "Mark {source} as received",
+      "title": "Mark as received",
+      "confirm": "Mark as received",
+      "done": "Marked as received",
+      "doneBase": "Saved as {amount} at {rate}, the rate of the received date."
+    }
+  },
+  "expenses": {
+    "title": "Expenses",
+    "add": "Add expense",
+    "back": "All expenses",
+    "empty": "No expenses yet",
+    "saved": "Expense saved",
+    "deleted": "Expense deleted",
+    "deleteTitle": "Delete \"{description}\"?",
+    "overpaid": "Overpaid",
+    "outstandingEstimated": "estimated",
+    "noInvoice": "No invoice yet",
+    "payments": "Payments",
+    "fields": {
+      "description": "Description",
+      "vendor": "Vendor",
+      "estimated": "Estimated",
+      "actual": "Actual",
+      "paid": "Paid",
+      "outstanding": "Outstanding",
+      "dueDate": "Due date"
+    },
+    "form": {
+      "createTitle": "New expense",
+      "editTitle": "Edit expense",
+      "actualHelp": "The invoiced amount, once you know it. Same currency as the estimate.",
+      "currencyLocked": "The currency cannot change once payments are recorded.",
+      "statusHelp": "Partially paid and paid follow from the payments.",
+      "statusDerived": "Now {status}, from the payments. Choose a status only to change it, e.g. Cancelled."
+    }
+  },
+  "payments": {
+    "add": "Add payment",
+    "empty": "No payments yet",
+    "emptyDescription": "Record deposits and instalments here; the status and outstanding amount follow.",
+    "saved": "Payment saved",
+    "deleted": "Payment deleted",
+    "edit": "Edit payment of {date}",
+    "delete": "Delete payment of {date}",
+    "deleteTitle": "Delete this payment?",
+    "fields": {
+      "paidDate": "Paid on"
+    },
+    "form": {
+      "createTitle": "New payment",
+      "editTitle": "Edit payment",
+      "currencyFixed": "In {currency}, the expense currency.",
+      "notInFuture": "The payment date cannot be in the future."
+    }
+  },
+  "receipts": {
+    "attach": "Attach receipt",
+    "choose": "Choose a receipt file",
+    "limits": "JPG, PNG, WebP or PDF, up to 5 MB",
+    "uploading": "Uploading… {percent}%",
+    "uploaded": "Receipt attached",
+    "open": "Open receipt",
+    "download": "Download receipt",
+    "replace": "Replace receipt",
+    "remove": "Remove receipt",
+    "removeTitle": "Remove this receipt?",
+    "removed": "Receipt removed",
+    "wrongType": "Use a JPG, PNG, WebP or PDF file.",
+    "tooBig": "This file is {size}; receipts can be up to 5 MB."
   },
   "auth": {
     "fields": {
@@ -44,6 +179,7 @@
     "email": "Enter a valid email address.",
     "max": "Use at most {max} characters.",
     "money": "Enter a valid amount for this currency.",
+    "positive": "The amount must be greater than zero.",
     "passwordRules": "Use at least 8 characters, with letters and numbers.",
     "passwordMismatch": "The passwords do not match."
   },
@@ -55,6 +191,7 @@
   "money": {
     "currency": "Currency",
     "pasteRejected": "That is not an amount with at most 2 decimals. Nothing was pasted.",
+    "pasteAmbiguous": "\"{text}\" could be a decimal or a number in thousands. Nothing was pasted: please type the amount.",
     "pasteRejectedWhole": "Kip amounts are whole numbers. Nothing was pasted."
   },
   "weddings": {
@@ -126,6 +263,13 @@
     }
   },
   "rates": {
+    "preview": {
+      "saved": "rate saved with this record",
+      "from": "rate from {date}",
+      "baseAmount": "Base amount",
+      "missingTitle": "No {currency} rate on or before {date}",
+      "missingDescription": "Saving will fail until a {currency} to {base} rate exists for that date."
+    },
     "help": "Rates convert foreign amounts into {base}. Saved records keep the rate they were saved with.",
     "add": "Add rate",
     "addFor": "Add {currency} rate",

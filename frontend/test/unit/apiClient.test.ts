@@ -38,12 +38,24 @@ function setup(handle: Handler, { cookie = 'token-1' as string | null, locale = 
     return handle(url, options)
   })
 
+  // Uploads go to the same handler, after reporting progress like XMLHttpRequest does.
+  const uploads: Array<{ url: string, options: FetchOptions }> = []
+  const upload = vi.fn(async (url: string, options: FetchOptions & { onProgress: (fraction: number) => void }) => {
+    uploads.push({ url, options })
+    calls.push({ url, options })
+    options.onProgress(0.5)
+    options.onProgress(1)
+
+    return handle(url, options)
+  })
+
   const onUnauthenticated = vi.fn()
   const onError = vi.fn()
 
   const api = createApiClient({
     baseURL: 'http://localhost:8000',
     fetch: fetch as never,
+    upload: upload as never,
     readCookie: () => xsrf,
     locale: () => currentLocale,
     onUnauthenticated,
@@ -56,6 +68,7 @@ function setup(handle: Handler, { cookie = 'token-1' as string | null, locale = 
       currentLocale = value
     },
     calls,
+    uploads,
     apiCalls: () => calls.filter(call => call.url !== '/sanctum/csrf-cookie'),
     csrfRefreshes: () => csrfRefreshes,
     onUnauthenticated,
@@ -206,6 +219,14 @@ describe('422 validation errors', () => {
     expect(onUnauthenticated).not.toHaveBeenCalled()
   })
 
+  it('moves an API field onto the form field that shows it', () => {
+    const missingRate = new ApiValidationError({ message: 'No rate.', errors: { currency: ['No USD to LAK exchange rate is set on or before 2026-12-01.'] } })
+
+    expect(toFormErrors(missingRate, { currency: 'amount' })).toEqual([
+      { name: 'amount', message: 'No USD to LAK exchange rate is set on or before 2026-12-01.' }
+    ])
+  })
+
   it('maps to UForm errors with the first message per field', () => {
     expect(toFormErrors(new ApiValidationError(body))).toEqual([
       { name: 'email', message: 'The email field must be a valid email address.' },
@@ -259,6 +280,55 @@ describe('other failures', () => {
 
     expect(error).toMatchObject({ status: null, message: 'Request failed' })
     expect(onError).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('uploads', () => {
+  const receipt = () => {
+    const body = new FormData()
+    body.append('receipt', new Blob(['%PDF-1.4'], { type: 'application/pdf' }), 'deposit.pdf')
+
+    return body
+  }
+
+  it('posts multipart data with the XSRF header and reports progress', async () => {
+    const { api, uploads } = setup(() => ({ data: { id: 1 } }))
+    const progress: number[] = []
+
+    await expect(api.upload('/weddings/1/expenses/2/payments/3/receipt', receipt(), fraction => progress.push(fraction))).resolves.toEqual({ data: { id: 1 } })
+
+    expect(uploads).toHaveLength(1)
+    expect(uploads[0]!.options).toMatchObject({ method: 'POST', credentials: 'include', headers: { 'X-XSRF-TOKEN': 'token-1' } })
+    expect(uploads[0]!.options.body).toBeInstanceOf(FormData)
+    expect(progress).toEqual([0.5, 1])
+  })
+
+  it('returns a rejected file as field errors, like any form', async () => {
+    const { api, onError } = setup(() => {
+      throw httpError(422, { message: 'Too big.', errors: { receipt: ['The receipt field must not be greater than 5120 kilobytes.'] } })
+    })
+
+    const error = await api.upload('/receipt', receipt(), () => {}).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(ApiValidationError)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('refreshes a stale CSRF token and uploads again once', async () => {
+    let attempts = 0
+    const { api, uploads, csrfRefreshes } = setup(() => {
+      attempts++
+      if (attempts === 1) {
+        throw httpError(419)
+      }
+
+      return { data: 'stored' }
+    })
+
+    await expect(api.upload('/receipt', receipt(), () => {})).resolves.toEqual({ data: 'stored' })
+
+    expect(csrfRefreshes()).toBe(1)
+    expect(uploads.map(call => call.options.headers['X-XSRF-TOKEN'])).toEqual(['token-1', 'token-2'])
   })
 })
 

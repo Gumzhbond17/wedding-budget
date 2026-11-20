@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Revenues;
 
+use App\Actions\Revenues\ManageRevenue;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\RevenueStatus;
@@ -31,5 +32,13 @@ class UpdateRevenueRequest extends FormRequest
             'payment_method' => ['sometimes', 'nullable', Rule::enum(PaymentMethod::class)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ManageRevenue::messages();
     }
 }

@@ -158,18 +158,31 @@ export function applyTyping(raw: string, caret: number, currency: CurrencyCode):
   return { display, value, caret: position }
 }
 
+export type PasteResult
+  = | { ok: true, value: DecimalString }
+  /**
+   * invalid:   not an amount ("five hundred", "-500", "1,50,000", 19 digits);
+   * ambiguous: could be read two ways ("1.500" in USD: 1.5 or 1,500);
+   * fraction:  has decimals the currency cannot hold ("1500.50" in LAK).
+   */
+    | { ok: false, reason: 'invalid' | 'ambiguous' | 'fraction' }
+
+const invalid = { ok: false, reason: 'invalid' } as const
+
 /**
  * Reads a pasted amount whatever its convention: "150.000.000", "150,000,000",
  * "₭ 150 000 000", "1,234.50", "1.234,50", "$4,500" or "4500 USD".
  *
- * A separator followed by exactly 3 digits is a thousands separator (no currency here has
- * 3 decimals); one followed by 1 or 2 digits is the decimal mark. Groups must have 3 digits,
- * so "1,50,000" is refused rather than guessed. Returns the API value, "" for blank text, or
- * null when the text is not an amount this currency can hold (e.g. "1500.50" for LAK, which
- * has no minor unit: dropping the 50 would change the amount).
+ * A separator followed by 1 or 2 digits is the decimal mark; one followed by exactly 3 digits
+ * is a thousands separator, since no currency here has 3 decimals. Groups must have 3 digits,
+ * so "1,50,000" is refused rather than guessed. Nothing is ever guessed:
+ * - "1.500" in USD or THB is refused as ambiguous: a single dot is the decimal mark there
+ *   (1.5), yet many people write 1.500 for fifteen hundred. ("1.500.000" or "1.500,00" is
+ *   unambiguous, and so is "1.500" in kip, which has no decimals.)
+ * - "1500.50" in kip is refused: dropping the 50 would change the amount.
  */
-export function parsePastedAmount(text: string, currency: CurrencyCode): DecimalString | null {
-  const { decimals } = CURRENCIES[currency]
+export function parsePastedAmount(text: string, currency: CurrencyCode): PasteResult {
+  const { decimals, decimal } = CURRENCIES[currency]
   const cleaned = text
     // \s includes no-break and narrow no-break spaces (U+00A0, U+202F) used as group separators.
     .replace(/[\s'’]/g, '')
@@ -177,11 +190,11 @@ export function parsePastedAmount(text: string, currency: CurrencyCode): Decimal
     .replace(/^\+/, '')
 
   if (cleaned === '') {
-    return ''
+    return { ok: true, value: '' }
   }
 
   if (!/^[\d.,]+$/.test(cleaned) || !/\d/.test(cleaned)) {
-    return null
+    return invalid
   }
 
   const lastSeparator = Math.max(cleaned.lastIndexOf('.'), cleaned.lastIndexOf(','))
@@ -193,35 +206,43 @@ export function parsePastedAmount(text: string, currency: CurrencyCode): Decimal
     const mark = cleaned[lastSeparator]!
     const marksOfThatKind = cleaned.split(mark).length - 1
 
-    if (tail.length === 1 || tail.length === 2 || tail.length === 0) {
+    if (tail.length <= 2) {
       // Decimal mark (or a trailing one, "1500."), used once.
       if (marksOfThatKind !== 1) {
-        return null
+        return invalid
       }
       integerPart = cleaned.slice(0, lastSeparator)
       fraction = tail
     } else if (tail.length !== 3) {
-      return null
+      return invalid
+    } else if (decimals > 0 && mark === decimal && marksOfThatKind === 1 && !/[.,]/.test(cleaned.slice(0, lastSeparator))) {
+      // "1.500": the currency's own decimal mark, once, before 3 digits.
+      return { ok: false, reason: 'ambiguous' }
     }
+  }
+
+  // Both "." and "," as thousands separators ("1,234.567") follows no convention.
+  if (integerPart.includes('.') && integerPart.includes(',')) {
+    return invalid
   }
 
   const groups = integerPart.split(/[.,]/)
   if (groups.length > 1 && (groups[0]!.length < 1 || groups[0]!.length > 3 || groups.slice(1).some(part => part.length !== 3))) {
-    return null
+    return invalid
   }
 
   const integer = stripLeadingZeros(groups.join('') || '0')
 
   if (integer.length > MAX_INTEGER_DIGITS) {
-    return null
+    return invalid
   }
 
   if (fraction.length > decimals) {
     if (!/^0+$/.test(fraction.slice(decimals))) {
-      return null
+      return { ok: false, reason: 'fraction' }
     }
     fraction = fraction.slice(0, decimals)
   }
 
-  return fraction === '' ? integer : `${integer}.${fraction}`
+  return { ok: true, value: fraction === '' ? integer : `${integer}.${fraction}` }
 }

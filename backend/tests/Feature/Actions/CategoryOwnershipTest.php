@@ -31,7 +31,7 @@ it('rejects creating revenue with such a category', function (Closure $categoryI
 
     expect(fn () => app(ManageRevenue::class)->create($wedding, [
         'category_id' => $categoryId('revenue', $wedding), 'source' => 'Parents', 'amount' => '100.00',
-    ]))->toThrow(ValidationException::class, 'The selected category is not a revenue category of this wedding.')
+    ]))->toThrow(ValidationException::class, "The selected category is not one of this wedding's revenue categories.")
         ->and($wedding->revenues()->count())->toBe(0);
 })->with('foreign or mismatched categories');
 
@@ -40,7 +40,7 @@ it('rejects moving revenue to such a category', function (Closure $categoryId) {
     $original = $revenue->category_id;
 
     expect(fn () => app(ManageRevenue::class)->update($revenue, ['category_id' => $categoryId('revenue', $revenue->wedding()->sole())]))
-        ->toThrow(ValidationException::class, 'The selected category is not a revenue category of this wedding.')
+        ->toThrow(ValidationException::class, "The selected category is not one of this wedding's revenue categories.")
         ->and($revenue->refresh()->category_id)->toBe($original);
 })->with('foreign or mismatched categories');
 
@@ -49,7 +49,7 @@ it('rejects creating an expense with such a category', function (Closure $catego
 
     expect(fn () => app(ManageExpense::class)->create($wedding, [
         'category_id' => $categoryId('expense', $wedding), 'description' => 'Hall', 'estimated_amount' => '100.00',
-    ]))->toThrow(ValidationException::class, 'The selected category is not a expense category of this wedding.')
+    ]))->toThrow(ValidationException::class, "The selected category is not one of this wedding's expense categories.")
         ->and($wedding->expenses()->count())->toBe(0);
 })->with('foreign or mismatched categories');
 
@@ -58,7 +58,7 @@ it('rejects moving an expense to such a category', function (Closure $categoryId
     $original = $expense->category_id;
 
     expect(fn () => app(ManageExpense::class)->update($expense, ['category_id' => $categoryId('expense', $expense->wedding()->sole())]))
-        ->toThrow(ValidationException::class, 'The selected category is not a expense category of this wedding.')
+        ->toThrow(ValidationException::class, "The selected category is not one of this wedding's expense categories.")
         ->and($expense->refresh()->category_id)->toBe($original);
 })->with('foreign or mismatched categories');
 

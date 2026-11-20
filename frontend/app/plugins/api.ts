@@ -24,6 +24,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     baseURL: config.public.apiBase,
     // apiClient types the body as unknown (any JSON value or FormData); $fetch serializes it.
     fetch: (url, options) => $fetch(url, options as Parameters<typeof $fetch>[1]),
+    upload: xhrUpload,
     readCookie: name => readCookie(document.cookie, name),
     // Read per request, so a language switch applies to the very next call.
     locale: () => nuxtApp.$i18n.locale.value,

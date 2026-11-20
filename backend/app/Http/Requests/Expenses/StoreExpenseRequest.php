@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Expenses;
 
+use App\Actions\Expenses\ManageExpense;
 use App\Enums\Currency;
 use App\Enums\ExpenseStatus;
 use App\Rules\Money;
@@ -30,5 +31,13 @@ class StoreExpenseRequest extends FormRequest
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ManageExpense::messages();
     }
 }

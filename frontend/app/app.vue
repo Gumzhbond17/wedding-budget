@@ -22,7 +22,11 @@ useHead({
 </script>
 
 <template>
-  <UApp :locale="uiLocale">
+  <!-- At most 3 toasts: on a phone a longer stack covers the content being worked on. -->
+  <UApp
+    :locale="uiLocale"
+    :toaster="{ max: 3 }"
+  >
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

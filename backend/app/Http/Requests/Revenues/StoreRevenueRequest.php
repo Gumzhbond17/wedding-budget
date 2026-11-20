@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Revenues;
 
+use App\Actions\Revenues\ManageRevenue;
 use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\RevenueStatus;
@@ -31,5 +32,13 @@ class StoreRevenueRequest extends FormRequest
             'payment_method' => ['nullable', Rule::enum(PaymentMethod::class)],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ManageRevenue::messages();
     }
 }

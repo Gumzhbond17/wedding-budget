@@ -107,6 +107,19 @@ final class ManageRevenue
     }
 
     /**
+     * Messages shared with the revenue Form Requests, which run first: without them the user
+     * would read Laravel's "The received date field is required when status is received."
+     *
+     * @return array<string, string>
+     */
+    public static function messages(): array
+    {
+        return [
+            'received_date.required_if' => __('A received revenue needs the date it was received.'),
+        ];
+    }
+
+    /**
      * A received revenue needs the date it arrived: that date picks its rate snapshot.
      *
      * @throws ValidationException
@@ -115,7 +128,7 @@ final class ManageRevenue
     {
         if ($revenue->status === RevenueStatus::Received && $revenue->received_date === null) {
             throw ValidationException::withMessages([
-                'received_date' => 'A received revenue needs the date it was received.',
+                'received_date' => self::messages()['received_date.required_if'],
             ]);
         }
     }

@@ -56,7 +56,7 @@ const dynamicPrefixes = new Set(sources.flatMap(({ code }) =>
 describe('translation keys', () => {
   it('finds the keys used in app/', () => {
     expect(staticKeys.size).toBeGreaterThan(30)
-    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency', 'categories.form.createTitle']))
+    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency', 'categories.form.createTitle', 'status', 'paymentMethod']))
   })
 
   it.each([...staticKeys].sort())('en.json has "%s"', (key) => {
@@ -71,6 +71,10 @@ describe('translation keys', () => {
     expect(Object.keys(lookup(en, 'weddings.status') as object).sort()).toEqual(['completed', 'planning'])
     expect(Object.keys(lookup(en, 'currency') as object).sort()).toEqual(['LAK', 'THB', 'USD'])
     expect(Object.keys(lookup(en, 'categories.form.createTitle') as object).sort()).toEqual(['expense', 'revenue'])
+    // Every API status (ExpenseStatus, RevenueStatus) and payment method has a label.
+    expect(Object.keys(lookup(en, 'status') as object).sort())
+      .toEqual(['booked', 'cancelled', 'expected', 'paid', 'partially_paid', 'planned', 'received'])
+    expect(Object.keys(lookup(en, 'paymentMethod') as object).sort()).toEqual(['bank_transfer', 'cash', 'none', 'other'])
   })
 
   it('has no Lao key that English lacks', () => {

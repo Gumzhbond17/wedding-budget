@@ -31,6 +31,13 @@ export interface FetchOptions {
 /** The subset of ofetch's $fetch this client needs; errors carry response.status and data. */
 export type Fetcher = <T>(url: string, options: FetchOptions) => Promise<T>
 
+/**
+ * Multipart upload reporting progress (0..1). $fetch cannot report upload progress, so the
+ * app passes an XMLHttpRequest implementation (utils/xhrUpload.ts). Errors follow the same
+ * shape as Fetcher's, so 401/419/422 handling is shared.
+ */
+export type Uploader = <T>(url: string, options: FetchOptions & { body: FormData, onProgress: (fraction: number) => void }) => Promise<T>
+
 export interface RequestOptions {
   body?: unknown
   query?: Record<string, unknown>
@@ -43,12 +50,15 @@ export interface RequestOptions {
    * as ApiError without the toast, so the user does not see the same error twice.
    */
   expectedStatuses?: number[]
+  /** Set by upload(): send body (FormData) through the Uploader and report progress. */
+  onUploadProgress?: (fraction: number) => void
 }
 
 export interface ApiClientOptions {
   /** Laravel origin, e.g. http://localhost:8000 (no /api). */
   baseURL: string
   fetch: Fetcher
+  upload: Uploader
   readCookie: (name: string) => string | null
   /** Current UI language ("en", "lo"), sent as Accept-Language so API messages match it. */
   locale: () => string
@@ -86,11 +96,17 @@ export class ApiValidationError extends ApiError {
   }
 }
 
-/** UForm's FormError shape: one message per field, the first one Laravel reported. */
-export function toFormErrors(error: ApiValidationError): Array<{ name: string, message: string }> {
+/**
+ * UForm's FormError shape: one message per field, the first one Laravel reported.
+ *
+ * aliases moves an API field onto the form field that shows it. MoneyInput carries the
+ * currency inside the amount field, so a "currency" error (e.g. no exchange rate) must land
+ * there: UForm silently drops errors for names it has no field for.
+ */
+export function toFormErrors(error: ApiValidationError, aliases: Record<string, string> = {}): Array<{ name: string, message: string }> {
   return Object.entries(error.errors)
     .filter(([, messages]) => messages.length > 0)
-    .map(([name, messages]) => ({ name, message: messages[0]! }))
+    .map(([name, messages]) => ({ name: aliases[name] ?? name, message: messages[0]! }))
 }
 
 /** Value of one cookie from a document.cookie string; Laravel URL-encodes XSRF-TOKEN. */
@@ -158,14 +174,20 @@ export function createApiClient(options: ApiClientOptions) {
       headers[XSRF_HEADER] = token
     }
 
-    return options.fetch<T>(url, {
+    const fetchOptions: FetchOptions = {
       method,
       baseURL: options.baseURL + API_PREFIX,
       credentials: 'include',
       headers,
       body: request.body,
       query: request.query
-    })
+    }
+
+    if (request.onUploadProgress !== undefined && request.body instanceof FormData) {
+      return options.upload<T>(url, { ...fetchOptions, body: request.body, onProgress: request.onUploadProgress })
+    }
+
+    return options.fetch<T>(url, fetchOptions)
   }
 
   async function handleFailure(cause: unknown, request: RequestOptions): Promise<never> {
@@ -221,6 +243,9 @@ export function createApiClient(options: ApiClientOptions) {
     patch: <T>(url: string, body?: unknown, opts?: RequestOptions) => request<T>('PATCH', url, { ...opts, body }),
     put: <T>(url: string, body?: unknown, opts?: RequestOptions) => request<T>('PUT', url, { ...opts, body }),
     delete: <T>(url: string, opts?: RequestOptions) => request<T>('DELETE', url, opts),
+    /** POST multipart data with progress; same CSRF, 401, 419 and 422 handling as the rest. */
+    upload: <T>(url: string, body: FormData, onProgress: (fraction: number) => void, opts?: RequestOptions) =>
+      request<T>('POST', url, { ...opts, body, onUploadProgress: onProgress }),
     refreshCsrfToken
   }
 }

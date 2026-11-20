@@ -112,6 +112,19 @@ final class ManageExpense
     }
 
     /**
+     * Messages shared with the expense Form Requests, which run first: without them the
+     * user would read Laravel's "The selected status is invalid." instead.
+     *
+     * @return array<string, string>
+     */
+    public static function messages(): array
+    {
+        return [
+            'status.in' => __('Status can be planned, booked or cancelled. Partially paid and paid follow from payments.'),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      *
      * @throws ValidationException
@@ -126,7 +139,7 @@ final class ManageExpense
 
         if ($status === null || ! $status->isUserSettable()) {
             throw ValidationException::withMessages([
-                'status' => __('Status can be planned, booked or cancelled. Partially paid and paid follow from payments.'),
+                'status' => self::messages()['status.in'],
             ]);
         }
     }

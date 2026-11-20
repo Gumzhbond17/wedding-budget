@@ -125,27 +125,51 @@ describe('pasting', () => {
     ['123.456.789.012.345.678', 'LAK', '123456789012345678'],
     ['', 'LAK', '']
   ] as const)('reads %j as %s %s', (text, currency, expected) => {
-    expect(parsePastedAmount(text, currency)).toBe(expected)
+    expect(parsePastedAmount(text, currency)).toEqual({ ok: true, value: expected })
   })
 
   it('reads no-break and narrow no-break spaces as group separators', () => {
     const nbsp = String.fromCharCode(0xA0)
     const narrow = String.fromCharCode(0x202F)
 
-    expect(parsePastedAmount(`150${nbsp}000${narrow}000${nbsp}₭`, 'LAK')).toBe('150000000')
+    expect(parsePastedAmount(`150${nbsp}000${narrow}000${nbsp}₭`, 'LAK')).toEqual({ ok: true, value: '150000000' })
   })
 
   it.each([
-    ['1500.50', 'LAK', 'kip has no minor unit; dropping 50 would change the amount'],
-    ['1,50,000', 'LAK', 'groups must have 3 digits'],
-    ['1.234.56', 'USD', 'two decimal marks'],
-    ['12.3456', 'USD', '4 digits after the mark'],
-    ['-500', 'USD', 'negative'],
-    ['five hundred', 'USD', 'words'],
-    ['1234567890123456789', 'LAK', '19 integer digits'],
-    ['.', 'USD', 'no digits']
-  ] as const)('refuses %j for %s (%s)', (text, currency) => {
-    expect(parsePastedAmount(text, currency)).toBeNull()
+    ['1500.50', 'LAK', 'fraction', 'kip has no minor unit; dropping 50 would change the amount'],
+    ['1,50,000', 'LAK', 'invalid', 'groups must have 3 digits'],
+    ['1.234.56', 'USD', 'invalid', 'two decimal marks'],
+    ['12.3456', 'USD', 'invalid', '4 digits after the mark'],
+    ['1,234.567', 'USD', 'invalid', 'dot and comma both as thousands separators'],
+    ['-500', 'USD', 'invalid', 'negative'],
+    ['five hundred', 'USD', 'invalid', 'words'],
+    ['1234567890123456789', 'LAK', 'invalid', '19 integer digits'],
+    ['.', 'USD', 'invalid', 'no digits']
+  ] as const)('refuses %j for %s as %s (%s)', (text, currency, reason) => {
+    expect(parsePastedAmount(text, currency)).toEqual({ ok: false, reason })
+  })
+})
+
+describe('pasting "1.500": ambiguous where a dot is the decimal mark', () => {
+  it.each([
+    ['1.500', 'USD'],
+    ['2.000', 'USD'],
+    ['$1.500', 'USD'],
+    ['2.000', 'THB'],
+    ['฿ 12.345 ', 'THB']
+  ] as const)('refuses %j in %s instead of guessing 1.5 or 1500', (text, currency) => {
+    expect(parsePastedAmount(text, currency)).toEqual({ ok: false, reason: 'ambiguous' })
+  })
+
+  it.each([
+    ['1.500', 'LAK', '1500', 'kip has no decimals, so the dot can only group'],
+    ['1,500', 'USD', '1500', 'a comma is never the USD decimal mark'],
+    ['1.500.000', 'USD', '1500000', 'two dots can only be thousands separators'],
+    ['1.500,00', 'USD', '1500.00', 'a comma after it is the decimal mark'],
+    ['1.50', 'USD', '1.50', 'two digits: a decimal'],
+    ['1.5', 'THB', '1.5', 'one digit: a decimal']
+  ] as const)('still reads %j in %s as %s (%s)', (text, currency, expected) => {
+    expect(parsePastedAmount(text, currency)).toEqual({ ok: true, value: expected })
   })
 })
 

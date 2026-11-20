@@ -22,6 +22,8 @@ const sectionItems = computed<NavigationMenuItem[]>(() => {
     ? []
     : [
         { label: t('nav.dashboard'), icon: 'i-lucide-layout-dashboard', to: `/weddings/${id}`, exact: true },
+        { label: t('nav.revenues'), icon: 'i-lucide-hand-coins', to: `/weddings/${id}/revenues` },
+        { label: t('nav.expenses'), icon: 'i-lucide-receipt', to: `/weddings/${id}/expenses` },
         { label: t('nav.settings'), icon: 'i-lucide-settings', to: `/weddings/${id}/settings` }
       ]
 })
@@ -110,10 +112,16 @@ async function logout(): Promise<void> {
 
     <UMain>
       <UContainer class="py-6">
+        <!-- Phones: labels only, never truncated; scrolls sideways if a language makes them longer. -->
         <UNavigationMenu
           v-if="sectionItems.length > 0"
           :items="sectionItems"
           highlight
+          :ui="{
+            root: 'overflow-x-auto',
+            linkLeadingIcon: 'hidden sm:inline-flex',
+            linkLabel: 'overflow-visible whitespace-nowrap'
+          }"
           class="-mx-2.5 mb-6 border-b border-default"
         />
         <slot />
