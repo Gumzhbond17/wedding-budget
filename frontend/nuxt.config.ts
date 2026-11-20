@@ -24,7 +24,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // Laravel origin, without /api. Override with NUXT_PUBLIC_API_BASE.
+      // Laravel origin, without /api. Override with NUXT_PUBLIC_API_BASE. The static build
+      // (nuxt generate, used by Docker) bakes the value in at build time; Docker builds with an
+      // empty value, so the SPA calls /api on its own origin.
       apiBase: 'http://localhost:8000'
     }
   },

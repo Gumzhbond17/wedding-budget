@@ -1,0 +1,36 @@
+# Secrets and local state never enter the build context.
+.env
+.env.*
+!.env.example
+auth.json
+
+# Rebuilt inside the image (composer install --no-dev).
+vendor/
+
+# Local runtime data: the image creates empty storage directories itself.
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/logs/*
+storage/pail/
+bootstrap/cache/*.php
+
+# Development only.
+tests/
+.phpunit.cache/
+.phpunit.result.cache
+phpunit.xml
+.claude/
+.mcp.json
+boost.json
+AGENTS.md
+CLAUDE.md
+.editorconfig
+.git/
+.github/
+.idea/
+.vscode/
+Dockerfile
+.dockerignore

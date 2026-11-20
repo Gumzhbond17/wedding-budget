@@ -1,0 +1,4 @@
+# Docker Compose settings with secrets (template: .env.docker.example).
+/.env
+# Backups made with the README's backup commands.
+/backups/

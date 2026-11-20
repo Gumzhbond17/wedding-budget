@@ -14,6 +14,13 @@ export default defineConfig({
   },
   test: {
     include: ['test/unit/**/*.test.ts'],
-    environment: 'node'
+    environment: 'node',
+    // pnpm coverage: the framework-free code the unit tests target.
+    coverage: {
+      provider: 'v8',
+      include: ['app/utils/**/*.ts'],
+      reporter: ['text', 'html'],
+      reportsDirectory: 'coverage'
+    }
   }
 })

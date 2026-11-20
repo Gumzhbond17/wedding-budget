@@ -1,0 +1,73 @@
+name: Docker
+
+# Builds the production images from a clean checkout and smoke-tests the running stack
+# (README "Running with Docker", step by step).
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.env.docker.example'
+      - '.github/workflows/docker.yml'
+      - '.github/scripts/docker-smoke.sh'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.env.docker.example'
+      - '.github/workflows/docker.yml'
+      - '.github/scripts/docker-smoke.sh'
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Build and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fresh secrets per run, generated the way the README tells users to.
+      - name: Configure .env
+        run: |
+          cp .env.docker.example .env
+          sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
+          sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$(openssl rand -hex 24)|" .env
+          sed -i "s|^MYSQL_ROOT_PASSWORD=.*|MYSQL_ROOT_PASSWORD=$(openssl rand -hex 24)|" .env
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Migrate (one-off)
+        run: docker compose run --rm app php artisan migrate --force
+
+      - name: Start
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Images run as non-root and hold no .env
+        run: |
+          test "$(docker compose exec -T app id -un)" = www-data
+          ! docker compose exec -T app test -e /var/www/html/.env
+          docker compose exec -T app php -r 'exit(ini_get("opcache.enable") ? 0 : 1);'
+
+      - name: Smoke test
+        run: bash .github/scripts/docker-smoke.sh
+
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v

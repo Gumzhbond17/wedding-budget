@@ -1,0 +1,92 @@
+# Production-like stack on one origin:
+#   web   nginx: the static Nuxt app at /, proxies /api, /sanctum and /up to app
+#   app   Laravel on PHP 8.5-FPM (non-root)
+#   mysql MySQL 8.4
+#
+# Settings come from .env next to this file (copy .env.docker.example, fill in the passwords
+# and APP_KEY; see README "Running with Docker"). Then:
+#   docker compose build
+#   docker compose run --rm app php artisan migrate --force   # one-off, never on container start
+#   docker compose up -d
+# and open http://localhost:8080 (APP_PORT).
+
+name: wedding-budget
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-wedding_budget}
+      MYSQL_USER: ${DB_USERNAME:-wedding}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    # Not published to the host: only app reaches it, on the internal network.
+    healthcheck:
+      # "ping" answers without credentials, so no password ends up in the process list.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  app:
+    build:
+      context: ./backend
+      additional_contexts:
+        php-config: ./docker/php
+    image: wedding-budget-app:latest
+    restart: unless-stopped
+    # Listed one by one rather than env_file: the app never sees MYSQL_ROOT_PASSWORD.
+    environment:
+      APP_NAME: Wedding Budget
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY:?Set APP_KEY in .env (see README)}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      # Same origin as the API: CORS is not involved, but the setting must still name it.
+      FRONTEND_URL: ${APP_URL:-http://localhost:8080}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:8080}
+      SESSION_DRIVER: database
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      # Host-only cookie for the single origin.
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-wedding_budget}
+      DB_USERNAME: ${DB_USERNAME:-wedding}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      # Private receipts: mounted only here, never in web, so nginx cannot serve them.
+      - receipts:/var/www/html/storage/app/private/receipts
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      additional_contexts:
+        nginx-config: ./docker/nginx
+      args:
+        # Empty: the SPA calls /api on its own origin.
+        NUXT_PUBLIC_API_BASE: ""
+    image: wedding-budget-web:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  receipts:

@@ -1,0 +1,24 @@
+# Rebuilt inside the image.
+node_modules/
+.nuxt/
+.output/
+.data/
+.nitro/
+.cache/
+dist/
+
+# Secrets and local settings.
+.env
+.env.*
+!.env.example
+
+# Development only.
+test/
+coverage/
+.git/
+.github/
+.idea/
+.vscode/
+*.log
+Dockerfile
+.dockerignore

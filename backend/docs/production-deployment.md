@@ -1,7 +1,10 @@
-# Production deployment
+# Production deployment: separate frontend and API hosts
 
-Section for the root README (deliverable 10). Sanctum SPA authentication uses a session cookie,
-so the browser must treat the frontend and the API as the same site.
+The recommended deployment is the Docker stack, which serves the frontend and the API on one
+origin (see the root [README](../../README.md): "Running with Docker" and the production
+checklist). This page covers the other layout: the SPA and the API on different subdomains.
+Sanctum SPA authentication uses a session cookie, so the browser must treat the frontend and
+the API as the same site.
 
 ## Domains and HTTPS
 
