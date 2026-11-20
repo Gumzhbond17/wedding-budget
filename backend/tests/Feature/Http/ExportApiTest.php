@@ -26,7 +26,7 @@ function csvRows(TestResponse $response): array
 }
 
 it('exports revenues with original amount, currency, rate and base amount', function () {
-    $wedding = Wedding::factory()->create();
+    $wedding = Wedding::factory()->create(['name' => 'Vanh & Noy']);
     $category = Category::factory()->revenue()->for($wedding)->create(['name' => 'ຂອງຂວັນ']);
     $revenue = Revenue::factory()->for($wedding)->for($category)->inCurrency(Currency::USD, '21850.00000000', '1500.00')
         ->create(['source' => 'ພໍ່ແມ່ເຈົ້າບ່າວ', 'expected_date' => '2026-12-01', 'notes' => null]);
@@ -36,7 +36,7 @@ it('exports revenues with original amount, currency, rate and base amount', func
     $response = $this->actingAs($wedding->user)->get(route('v1.weddings.exports.revenues', $wedding))
         ->assertOk()
         ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
-        ->assertHeader('Content-Disposition', "attachment; filename=wedding-{$wedding->id}-revenues-2026-11-18.csv")
+        ->assertHeader('Content-Disposition', "attachment; filename=vanh-noy-revenues-2026-11-18.csv; filename*=utf-8''Vanh-%26-Noy-revenues-2026-11-18.csv")
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
 
@@ -67,6 +67,27 @@ it('exports expenses with original and base amounts and the outstanding balance'
             'THB', '620.00000000', '30000.00', '32000.00', '10000.00', '22000.00', 'actual',
             '18600000.00', '19840000.00', '6150000.00', ''],
     ]);
+});
+
+it('names the file after the wedding and the export date, keeping Lao text', function (string $name, string $fileName, string $fallback) {
+    $wedding = Wedding::factory()->create(['name' => $name]);
+    $fallback = str_replace('{id}', (string) $wedding->id, $fallback);
+
+    $this->actingAs($wedding->user)->get(route('v1.weddings.exports.expenses', $wedding))
+        ->assertOk()
+        ->assertHeader('Content-Disposition', "attachment; filename={$fallback}-expenses-2026-11-18.csv; filename*=utf-8''".rawurlencode("{$fileName}-expenses-2026-11-18.csv"));
+})->with([
+    'Lao name, no ASCII fallback left' => ['ງານແຕ່ງ ວັນ ແລະ ນ້ອຍ', 'ງານແຕ່ງ-ວັນ-ແລະ-ນ້ອຍ', 'wedding-{id}'],
+    'characters file systems refuse' => ['A/B: "100%" <party>?', 'AB-100-party', 'ab-100-party'],
+]);
+
+it('lets the SPA read the file name across origins', function () {
+    $wedding = Wedding::factory()->create();
+
+    $this->actingAs($wedding->user)
+        ->get(route('v1.weddings.exports.revenues', $wedding), ['Origin' => config('cors.allowed_origins')[0]])
+        ->assertOk()
+        ->assertHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 });
 
 it('neutralizes spreadsheet formulas in text cells', function () {

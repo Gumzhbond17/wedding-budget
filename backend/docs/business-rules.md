@@ -117,6 +117,10 @@ Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{we
 - `GET /api/v1/weddings/{wedding}/exports/revenues` and `/exports/expenses`: policy-checked like
   every wedding endpoint, limited to 10 per minute per user, soft-deleted records excluded.
 - Streamed in chunks, UTF-8 with a BOM (Excel shows Lao text correctly), CRLF line endings.
+- File name `<wedding name>-<revenues|expenses>-<YYYY-MM-DD>.csv` (date in Lao time). Lao text is
+  kept through `filename*` (RFC 6266); characters file systems refuse and `%` are dropped, spaces
+  become `-`. The ASCII `filename` fallback is a slug of the name, or `wedding-<id>` when nothing
+  ASCII is left. `Content-Disposition` is exposed through CORS so the SPA can name the download.
 - Each row has the original amount, currency, snapshotted rate and base amount(s); expenses also
   carry paid and outstanding amounts with the outstanding basis.
 - Formula injection: a cell starting with `=`, `+`, `-`, `@`, tab or carriage return is prefixed

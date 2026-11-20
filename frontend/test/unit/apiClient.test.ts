@@ -49,12 +49,20 @@ function setup(handle: Handler, { cookie = 'token-1' as string | null, locale = 
     return handle(url, options)
   })
 
+  // File downloads also go to the handler, which answers with a FileResponse.
+  const fetchFile = vi.fn(async (url: string, options: FetchOptions) => {
+    calls.push({ url, options })
+
+    return handle(url, options)
+  })
+
   const onUnauthenticated = vi.fn()
   const onError = vi.fn()
 
   const api = createApiClient({
     baseURL: 'http://localhost:8000',
     fetch: fetch as never,
+    fetchFile: fetchFile as never,
     upload: upload as never,
     readCookie: () => xsrf,
     locale: () => currentLocale,
@@ -329,6 +337,25 @@ describe('uploads', () => {
 
     expect(csrfRefreshes()).toBe(1)
     expect(uploads.map(call => call.options.headers['X-XSRF-TOKEN'])).toEqual(['token-1', 'token-2'])
+  })
+})
+
+describe('downloads', () => {
+  it('returns the file and the name from Content-Disposition', async () => {
+    const blob = new Blob(['﻿ID\r\n'], { type: 'text/csv' })
+    const { api, calls } = setup(() => ({ blob, contentDisposition: 'attachment; filename=wedding-1-revenues-2026-11-20.csv; filename*=utf-8\'\'%E0%BA%87%E0%BA%B2%E0%BA%99-revenues-2026-11-20.csv' }))
+
+    await expect(api.download('/weddings/1/exports/revenues')).resolves.toEqual({ blob, fileName: 'ງານ-revenues-2026-11-20.csv' })
+    expect(calls[0]!.options).toMatchObject({ method: 'GET', credentials: 'include', baseURL: 'http://localhost:8000/api/v1' })
+  })
+
+  it('reports failures like any request', async () => {
+    const { api, onError } = setup(() => {
+      throw httpError(429)
+    })
+
+    await expect(api.download('/weddings/1/exports/expenses')).rejects.toMatchObject({ status: 429 })
+    expect(onError).toHaveBeenCalledOnce()
   })
 })
 

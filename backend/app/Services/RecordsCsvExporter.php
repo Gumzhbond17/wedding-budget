@@ -7,6 +7,8 @@ use App\Models\Revenue;
 use App\Models\Wedding;
 use Closure;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -95,9 +97,9 @@ final class RecordsCsvExporter
      */
     private function stream(Wedding $wedding, string $type, HasMany $records, array $header, Closure $row): StreamedResponse
     {
-        $filename = sprintf('wedding-%d-%s-%s.csv', $wedding->getKey(), $type, now(DashboardSummaryService::TIMEZONE)->format('Y-m-d'));
+        $suffix = sprintf('-%s-%s.csv', $type, now(DashboardSummaryService::TIMEZONE)->format('Y-m-d'));
 
-        return response()->streamDownload(function () use ($records, $header, $row): void {
+        return response()->stream(function () use ($records, $header, $row): void {
             $output = fopen('php://output', 'wb');
             fwrite($output, self::BOM);
             $this->write($output, $header);
@@ -108,11 +110,41 @@ final class RecordsCsvExporter
             }
 
             fclose($output);
-        }, $filename, [
+        }, 200, [
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                self::fileNamePart($wedding->name, $wedding->getKey()).$suffix,
+                self::asciiFileNamePart($wedding->name, $wedding->getKey()).$suffix,
+            ),
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Cache-Control' => 'private, no-store',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    /**
+     * The wedding name as a file name part, Lao text kept ("ງານແຕ່ງ Vanh & Noy" → "ງານແຕ່ງ-Vanh-&-Noy").
+     * Characters that Windows or macOS refuse in file names, control characters and "%" (which
+     * Symfony refuses in a disposition) are dropped; runs of spaces become one hyphen.
+     */
+    public static function fileNamePart(string $weddingName, int $weddingId): string
+    {
+        $name = preg_replace('/[\\\\\/:*?"<>|%\p{C}]+/u', '', $weddingName) ?? '';
+        $name = trim(preg_replace('/[\s.-]+/u', '-', $name) ?? '', '-');
+        $name = mb_substr($name, 0, 80);
+
+        return $name === '' ? self::asciiFileNamePart($weddingName, $weddingId) : $name;
+    }
+
+    /**
+     * ASCII fallback for clients that ignore filename* (RFC 6266): "Vanh & Noy" → "vanh-noy",
+     * or "wedding-12" when nothing ASCII is left, e.g. for an all-Lao name.
+     */
+    public static function asciiFileNamePart(string $weddingName, int $weddingId): string
+    {
+        $slug = Str::slug(Str::ascii($weddingName));
+
+        return $slug === '' ? 'wedding-'.$weddingId : mb_substr($slug, 0, 80);
     }
 
     /**

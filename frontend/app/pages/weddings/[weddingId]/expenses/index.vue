@@ -279,7 +279,19 @@ async function confirmDelete(): Promise<void> {
             </div>
 
             <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-              <div>
+              <!-- Same rule as the outstanding label: the invoice once known, else the estimate. -->
+              <div v-if="expense.actual_amount && expense.base_actual_amount">
+                <dt class="text-xs text-muted">
+                  {{ $t('expenses.fields.actual') }}
+                </dt>
+                <dd>
+                  <MoneyDisplay
+                    :money="expense.actual_amount"
+                    :base="expense.base_actual_amount"
+                  />
+                </dd>
+              </div>
+              <div v-else>
                 <dt class="text-xs text-muted">
                   {{ $t('expenses.fields.estimated') }}
                 </dt>

@@ -24,6 +24,12 @@ export default defineNuxtPlugin((nuxtApp) => {
     baseURL: config.public.apiBase,
     // apiClient types the body as unknown (any JSON value or FormData); $fetch serializes it.
     fetch: (url, options) => $fetch(url, options as Parameters<typeof $fetch>[1]),
+    // $fetch.raw keeps the headers; Content-Disposition is exposed by the API's CORS config.
+    async fetchFile(url, options) {
+      const response = await $fetch.raw<Blob>(url, { ...(options as Parameters<typeof $fetch>[1]), responseType: 'blob' })
+
+      return { blob: response._data!, contentDisposition: response.headers.get('content-disposition') }
+    },
     upload: xhrUpload,
     readCookie: name => readCookie(document.cookie, name),
     // Read per request, so a language switch applies to the very next call.

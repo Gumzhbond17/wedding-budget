@@ -1,4 +1,6 @@
 import type { ValidationErrorBody } from '~/types/api'
+// Explicit import (not the Nuxt auto-import) so the unit tests can load this file.
+import { fileNameFromDisposition } from '~/utils/download'
 
 /**
  * HTTP client for the Laravel API, free of Nuxt imports so its error handling can be unit
@@ -38,6 +40,18 @@ export type Fetcher = <T>(url: string, options: FetchOptions) => Promise<T>
  */
 export type Uploader = <T>(url: string, options: FetchOptions & { body: FormData, onProgress: (fraction: number) => void }) => Promise<T>
 
+/** A file response (CSV export): the body and the header that names it. */
+export interface FileResponse {
+  blob: Blob
+  contentDisposition: string | null
+}
+
+/**
+ * GET returning the raw body as a Blob plus its Content-Disposition, which $fetch's parsed
+ * result drops (the app passes $fetch.raw). Errors follow Fetcher's shape.
+ */
+export type FileFetcher = (url: string, options: FetchOptions) => Promise<FileResponse>
+
 export interface RequestOptions {
   body?: unknown
   query?: Record<string, unknown>
@@ -52,12 +66,15 @@ export interface RequestOptions {
   expectedStatuses?: number[]
   /** Set by upload(): send body (FormData) through the Uploader and report progress. */
   onUploadProgress?: (fraction: number) => void
+  /** Set by download(): read the response as a file through the FileFetcher. */
+  asFile?: boolean
 }
 
 export interface ApiClientOptions {
   /** Laravel origin, e.g. http://localhost:8000 (no /api). */
   baseURL: string
   fetch: Fetcher
+  fetchFile: FileFetcher
   upload: Uploader
   readCookie: (name: string) => string | null
   /** Current UI language ("en", "lo"), sent as Accept-Language so API messages match it. */
@@ -187,6 +204,10 @@ export function createApiClient(options: ApiClientOptions) {
       return options.upload<T>(url, { ...fetchOptions, body: request.body, onProgress: request.onUploadProgress })
     }
 
+    if (request.asFile) {
+      return options.fetchFile(url, fetchOptions) as Promise<T>
+    }
+
     return options.fetch<T>(url, fetchOptions)
   }
 
@@ -246,6 +267,15 @@ export function createApiClient(options: ApiClientOptions) {
     /** POST multipart data with progress; same CSRF, 401, 419 and 422 handling as the rest. */
     upload: <T>(url: string, body: FormData, onProgress: (fraction: number) => void, opts?: RequestOptions) =>
       request<T>('POST', url, { ...opts, body, onUploadProgress: onProgress }),
+    /**
+     * GET a file (CSV export) with the same session, 401 and error toasts as the rest. The
+     * file name comes from Content-Disposition (null when the header is missing or unreadable).
+     */
+    download: async (url: string, opts?: Omit<RequestOptions, 'body' | 'asFile'>): Promise<{ blob: Blob, fileName: string | null }> => {
+      const file = await request<FileResponse>('GET', url, { ...opts, asFile: true })
+
+      return { blob: file.blob, fileName: fileNameFromDisposition(file.contentDisposition) }
+    },
     refreshCsrfToken
   }
 }

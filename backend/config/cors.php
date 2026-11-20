@@ -27,7 +27,8 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // The SPA downloads CSV exports with fetch and names the file from this header.
+    'exposed_headers' => ['Content-Disposition'],
 
     'max_age' => 0,
 

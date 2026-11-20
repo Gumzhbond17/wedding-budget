@@ -10,6 +10,7 @@
     "deleteItem": "Delete {name}",
     "edit": "Edit",
     "editItem": "Edit {name}",
+    "retry": "Try again",
     "save": "Save"
   },
   "nav": {
@@ -223,10 +224,110 @@
   "dashboard": {
     "title": "Dashboard",
     "totalsIn": "Totals in {currency}",
-    "empty": {
-      "title": "Nothing to show yet",
-      "description": "Add revenue and expenses to see your totals and charts here."
+    "failed": "The dashboard could not be loaded",
+    "summaryLabel": "Summary",
+    "cards": {
+      "budgetTarget": "Budget target",
+      "plannedInCategories": "Planned in categories",
+      "revenue": "Revenue",
+      "expenses": "Expenses",
+      "expensesHelp": "Cancelled expenses count only what was paid on them.",
+      "remainingBudget": "Remaining budget",
+      "remainingBudgetHelp": "Budget target minus actual expenses.",
+      "overTarget": "Over the budget target",
+      "netCash": "Net cash position",
+      "netCashHelp": "Money received minus money paid.",
+      "paidMoreThanReceived": "More paid than received",
+      "fundingGap": "Funding gap (if all pledges arrive)",
+      "fundingGapHelp": "Committed expenses minus all revenue, expected and received.",
+      "securedGap": "Secured gap (money received only)",
+      "securedGapHelp": "Committed expenses minus revenue already received.",
+      "unallocated": "Unallocated budget",
+      "unallocatedHelp": "Budget target not yet planned in an expense category.",
+      "overAllocated": "Category budgets add up to more than the budget target.",
+      "setCategoryBudgets": "Set category budgets"
+    },
+    "gap": {
+      "needed": "Still needed",
+      "surplus": "Surplus",
+      "balanced": "Fully covered"
+    },
+    "health": {
+      "green": "On track",
+      "amber": "Close to budget",
+      "red": "Over budget",
+      "none": "No budget set"
+    },
+    "budget": {
+      "title": "Budget vs actual per category",
+      "planned": "Planned",
+      "committed": "Committed",
+      "committedByHealth": "Committed (actual, else estimate), coloured by health",
+      "used": "{percent}% used",
+      "empty": "Set category budgets or add expenses to compare them here."
+    },
+    "breakdown": {
+      "title": "Expenses by category",
+      "share": "{percent}%",
+      "empty": "No expenses yet."
+    },
+    "cashFlow": {
+      "title": "Monthly cash flow",
+      "inflow": "Money in",
+      "outflow": "Money out",
+      "net": "Net",
+      "cumulative": "Cash position",
+      "empty": "No money received or paid yet."
+    },
+    "upcoming": {
+      "title": "Upcoming payments",
+      "window": "Due in the 30 days from {date} (Lao time)",
+      "due": "Due {date}",
+      "empty": "Nothing due in the next 30 days."
+    },
+    "overBudget": {
+      "title": "Over-budget categories",
+      "amounts": "{committed} of {planned}",
+      "empty": "No category is over its budget."
+    },
+    "perCurrency": {
+      "title": "By currency",
+      "revenueReceived": "Revenue received",
+      "revenueExpected": "Revenue expected",
+      "expensesEstimated": "Expenses estimated",
+      "expensesActual": "Expenses actual",
+      "expensesPaid": "Expenses paid"
+    },
+    "start": {
+      "title": "Let's set up your budget",
+      "description": "Your totals and charts appear here once you add revenue or expenses. A few steps to get going:",
+      "done": "done",
+      "rates": {
+        "title": "Add exchange rates",
+        "description": "Needed for amounts in dollars or baht: each record keeps the rate of its date.",
+        "action": "Add rates"
+      },
+      "budgets": {
+        "title": "Set category budgets",
+        "description": "Plan how the budget target splits across venue, catering and the rest.",
+        "action": "Set budgets"
+      },
+      "expense": {
+        "title": "Add your first expense",
+        "description": "Start with what is booked or quoted; the actual amount can follow.",
+        "action": "Add expense"
+      },
+      "revenue": {
+        "title": "Record revenue",
+        "description": "Family contributions, savings and gifts, expected or received.",
+        "action": "Add revenue"
+      }
     }
+  },
+  "exports": {
+    "revenues": "Export revenues",
+    "expenses": "Export expenses",
+    "done": "Export downloaded"
   },
   "settings": {
     "title": "Settings",
