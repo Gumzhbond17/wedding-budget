@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\ExpensePaymentController;
 use App\Http\Controllers\Api\V1\ExpensePaymentReceiptController;
 use App\Http\Controllers\Api\V1\ExportController;
+use App\Http\Controllers\Api\V1\GiftEnvelopeController;
 use App\Http\Controllers\Api\V1\ReceiptDownloadController;
 use App\Http\Controllers\Api\V1\RevenueController;
 use App\Http\Controllers\Api\V1\WeddingController;
@@ -55,6 +56,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             ->group(function () {
                 Route::get('revenues', 'revenues')->name('revenues');
                 Route::get('expenses', 'expenses')->name('expenses');
+                Route::get('gift-envelopes', 'giftEnvelopes')->name('gift-envelopes');
             });
 
         Route::scopeBindings()->group(function () {
@@ -63,6 +65,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 ->except('show')
                 ->parameters(['exchange-rates' => 'exchangeRate']);
             Route::apiResource('weddings.revenues', RevenueController::class);
+            Route::apiResource('weddings.gift-envelopes', GiftEnvelopeController::class)
+                ->parameters(['gift-envelopes' => 'giftEnvelope']);
             Route::apiResource('weddings.expenses', ExpenseController::class);
             Route::apiResource('weddings.expenses.payments', ExpensePaymentController::class)->except('show');
 

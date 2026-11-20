@@ -21,6 +21,7 @@
     "allWeddings": "ງານແຕ່ງທັງໝົດ",
     "dashboard": "ພາບລວມ",
     "expenses": "ລາຍຈ່າຍ",
+    "giftEnvelopes": "ຊອງຂອງຂວັນ",
     "language": "ພາສາ",
     "logout": "ອອກຈາກລະບົບ",
     "revenues": "ລາຍຮັບ",
@@ -65,6 +66,47 @@
   },
   "records": {
     "deleteDescription": "ລາຍການນີ້ຈະຖືກເອົາອອກຈາກລາຍການ ແລະ ຍອດລວມ. ມັນຍັງຢູ່ໃນປະຫວັດ, ສະນັ້ນໝວດໝູ່ຂອງມັນຍັງຖືວ່າຖືກໃຊ້ຢູ່."
+  },
+  "guestGroup": {
+    "groom_family": "ຄອບຄົວເຈົ້າບ່າວ",
+    "bride_family": "ຄອບຄົວເຈົ້າສາວ",
+    "relatives": "ຍາດພີ່ນ້ອງ",
+    "friends": "ໝູ່ເພື່ອນ",
+    "colleagues": "ເພື່ອນຮ່ວມງານ",
+    "neighbors": "ເພື່ອນບ້ານ",
+    "other": "ອື່ນໆ"
+  },
+  "giftEnvelopes": {
+    "title": "ຊອງຂອງຂວັນ",
+    "help": "ເງິນທີ່ແຂກໃສ່ຊອງບັດເຊີນ, ເປັນ {currency}. ນັບເປັນລາຍຮັບທີ່ໄດ້ຮັບແລ້ວ; ຫຼຸດຍອດຄາດຄະເນ \"ຂອງຂວັນຈາກແຂກ\" ລົງ ເພື່ອບໍ່ໃຫ້ນັບຊ້ຳ.",
+    "add": "ເພີ່ມຊອງ",
+    "empty": "ຍັງບໍ່ມີຊອງ",
+    "emptyHelp": "ບັນທຶກແຕ່ລະຊອງ ພ້ອມຊື່ແຂກ ແລະ ຈຳນວນເງິນໃນຊອງ.",
+    "saved": "ບັນທຶກຊອງຂອງ {name} ແລ້ວ",
+    "deleted": "ລຶບຊອງແລ້ວ",
+    "deleteTitle": "ລຶບຊອງຂອງ \"{name}\" ບໍ?",
+    "deleteDescription": "ຈະຖືກລຶບອອກຈາກລາຍການ ແລະ ຍອດລວມລາຍຮັບ.",
+    "search": "ຊອກຫາຕາມຊື່",
+    "allGroups": "ທຸກກຸ່ມ",
+    "sortLabel": "ຮຽງລຳດັບ",
+    "sort": {
+      "created_at": "ໃໝ່ສຸດກ່ອນ",
+      "full_name": "ຊື່ ກ–ຮ",
+      "amount": "ຈຳນວນຫຼາຍສຸດ",
+      "received_date": "ໄດ້ຮັບລ່າສຸດ"
+    },
+    "totalCount": "ບໍ່ມີຊອງ | 1 ຊອງ | {count} ຊອງ",
+    "fields": {
+      "fullName": "ຊື່ ແລະ ນາມສະກຸນ",
+      "group": "ກຸ່ມ",
+      "description": "ລາຍລະອຽດ"
+    },
+    "form": {
+      "createTitle": "ຊອງຂອງຂວັນໃໝ່",
+      "editTitle": "ແກ້ໄຂຊອງຂອງຂວັນ",
+      "amountHint": "ເປັນ {currency}",
+      "saveAndAdd": "ບັນທຶກ ແລະ ເພີ່ມອີກ"
+    }
   },
   "revenues": {
     "title": "ລາຍຮັບ",
@@ -227,6 +269,7 @@
   "dashboard": {
     "title": "ພາບລວມ",
     "totalsIn": "ຍອດລວມເປັນ {currency}",
+    "giftEnvelopesIncluded": "ໃນນັ້ນ ຊອງຂອງຂວັນ",
     "failed": "ບໍ່ສາມາດໂຫຼດໜ້າພາບລວມໄດ້",
     "summaryLabel": "ສະຫຼຸບ",
     "cards": {
@@ -334,6 +377,7 @@
   "exports": {
     "revenues": "ສົ່ງອອກລາຍຮັບ",
     "expenses": "ສົ່ງອອກລາຍຈ່າຍ",
+    "giftEnvelopes": "ສົ່ງອອກຊອງ",
     "done": "ດາວໂຫຼດໄຟລ໌ແລ້ວ"
   },
   "settings": {
@@ -369,6 +413,26 @@
       "planned": "ງົບປະມານທີ່ວາງແຜນ",
       "plannedHelp": "ປ່ອຍວ່າງໄວ້ ຖ້າຍັງບໍ່ມີງົບປະມານສຳລັບກຸ່ມນີ້."
     }
+  },
+  "categoryNames": {
+    "familyContribution": "ເງິນສະໜັບສະໜູນຈາກຄອບຄົວ",
+    "guestGifts": "ຂອງຂວັນຈາກແຂກ",
+    "personalSavings": "ເງິນທ້ອນສ່ວນຕົວ",
+    "sponsorship": "ຜູ້ສະໜັບສະໜູນ",
+    "loan": "ເງິນກູ້",
+    "other": "ອື່ນໆ",
+    "venue": "ສະຖານທີ່",
+    "catering": "ອາຫານ ແລະ ເຄື່ອງດື່ມ",
+    "attire": "ຊຸດແຕ່ງງານ",
+    "photographyVideo": "ຖ່າຍຮູບ ແລະ ວິດີໂອ",
+    "decorationFlowers": "ຕົບແຕ່ງ ແລະ ດອກໄມ້",
+    "musicEntertainment": "ດົນຕີ ແລະ ຄວາມບັນເທີງ",
+    "invitations": "ບັດເຊີນ",
+    "ringsJewelry": "ແຫວນ ແລະ ເຄື່ອງປະດັບ",
+    "transportation": "ການເດີນທາງ",
+    "ceremony": "ພິທີການ",
+    "honeymoon": "ຮັນນີມູນ",
+    "miscellaneous": "ຄ່າໃຊ້ຈ່າຍອື່ນໆ"
   },
   "rates": {
     "preview": {

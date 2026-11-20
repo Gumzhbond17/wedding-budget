@@ -87,6 +87,7 @@ describe('check constraints', function () {
         'negative actual amount' => ['expenses', fn ($ids) => [...expenseRow($ids['wedding'], $ids['expense_category']), 'actual_amount' => '-1'], 'expenses_actual_amount_check'],
         'negative paid amount' => ['expenses', fn ($ids) => [...expenseRow($ids['wedding'], $ids['expense_category']), 'paid_amount' => '-1'], 'expenses_paid_amount_check'],
         'zero payment' => ['expense_payments', fn ($ids) => [...paymentRow($ids['expense']), 'amount' => '0'], 'expense_payments_amount_check'],
+        'zero gift envelope' => ['gift_envelopes', fn ($ids) => [...envelopeRow($ids['wedding']), 'amount' => '0'], 'gift_envelopes_amount_check'],
         'zero payment rate' => ['expense_payments', fn ($ids) => [...paymentRow($ids['expense']), 'exchange_rate' => '0'], 'expense_payments_exchange_rate_check'],
     ]);
 

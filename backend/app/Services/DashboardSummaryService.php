@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\DB;
  * is a fixed QUERY_COUNT queries whatever the number of records: four GROUP BY aggregates and
  * the short list of upcoming payments. PHP only adds up the few aggregated rows, with BCMath.
  *
+ * Gift envelopes count as received revenue in the base currency (totals, per-currency row of
+ * the base currency, cash flow); summary.revenue.gift_envelopes shows their part of it.
+ *
  * Cancelled expenses (docs/business-rules.md): their payments are real cash out (a forfeited
  * deposit), so for a cancelled expense the estimated, actual and committed figures all equal
  * what was paid; the rest of its balance is dropped. Soft-deleted records are excluded.
@@ -36,6 +39,10 @@ final class DashboardSummaryService
     public const int UPCOMING_DAYS = 30;
 
     public const int QUERY_COUNT = 5;
+
+    private const string KIND_REVENUE = 'revenue';
+
+    private const string KIND_ENVELOPE = 'envelope';
 
     /**
      * @return array{
@@ -63,6 +70,8 @@ final class DashboardSummaryService
             'received' => $this->sum($revenues->where('status', RevenueStatus::Received->value), 'base_amount'),
         ];
         $revenue['total'] = (string) (new Number($revenue['expected']) + new Number($revenue['received']));
+        // Already part of received (and total); listed apart so the dashboard can show it.
+        $revenue['gift_envelopes'] = $this->sum($revenues->where('kind', self::KIND_ENVELOPE), 'base_amount');
 
         $expenseTotals = [];
         foreach (['estimated', 'actual', 'paid', 'committed'] as $measure) {
@@ -99,14 +108,25 @@ final class DashboardSummaryService
     /**
      * Revenue sums per currency and status, in the original currency and in base.
      *
-     * @return Collection<int, object{currency: string, status: string, amount: string, base_amount: string}>
+     * Gift envelopes are money already received, in the base currency, so their total joins
+     * these rows as one more (base currency, received) group, in the same query. The kind
+     * column tells them apart, so the envelope total can also be shown on its own.
+     *
+     * @return Collection<int, object{kind: string, currency: string, status: string, amount: ?string, base_amount: ?string}>
      */
     private function revenueTotals(Wedding $wedding): Collection
     {
+        $envelopes = $wedding->giftEnvelopes()->toBase()
+            ->selectRaw('? AS kind, ? AS currency, ? AS status, SUM(amount) AS amount, SUM(amount) AS base_amount', [
+                self::KIND_ENVELOPE, $wedding->base_currency->value, RevenueStatus::Received->value,
+            ]);
+
         return $wedding->revenues()->toBase()
-            ->select('currency', 'status')
+            ->selectRaw('? AS kind', [self::KIND_REVENUE])
+            ->addSelect('currency', 'status')
             ->selectRaw('SUM(amount) AS amount, SUM(base_amount) AS base_amount')
             ->groupBy('currency', 'status')
+            ->unionAll($envelopes)
             ->get();
     }
 
@@ -260,9 +280,9 @@ final class DashboardSummaryService
     }
 
     /**
-     * Cash in (received revenue on received_date) against cash out (each payment on its
-     * paid_date, at its own rate snapshot), per month, with no gaps between the first and
-     * last month so the line chart's x-axis is continuous.
+     * Cash in (received revenue and gift envelopes on received_date) against cash out (each
+     * payment on its paid_date, at its own rate snapshot), per month, with no gaps between the
+     * first and last month so the line chart's x-axis is continuous.
      *
      * Payments on cancelled expenses count (money left); payments on trashed expenses do not.
      *
@@ -276,6 +296,10 @@ final class DashboardSummaryService
             ->where('status', RevenueStatus::Received->value)
             ->selectRaw("DATE_FORMAT(received_date, '%Y-%m') AS month, base_amount AS inflow, {$zero} AS outflow");
 
+        // Envelope amounts are already in the base currency.
+        $envelopeInflows = $wedding->giftEnvelopes()->toBase()
+            ->selectRaw("DATE_FORMAT(received_date, '%Y-%m') AS month, amount AS inflow, {$zero} AS outflow");
+
         $outflows = ExpensePayment::query()->toBase()
             ->join('expenses', 'expenses.id', '=', 'expense_payments.expense_id')
             ->where('expenses.wedding_id', $wedding->getKey())
@@ -283,7 +307,7 @@ final class DashboardSummaryService
             ->selectRaw("DATE_FORMAT(expense_payments.paid_date, '%Y-%m') AS month, {$zero} AS inflow, expense_payments.base_amount AS outflow");
 
         $months = DB::query()
-            ->fromSub($inflows->unionAll($outflows), 'flows')
+            ->fromSub($inflows->unionAll($envelopeInflows)->unionAll($outflows), 'flows')
             ->select('month')
             ->selectRaw('SUM(inflow) AS inflow, SUM(outflow) AS outflow')
             ->groupBy('month')

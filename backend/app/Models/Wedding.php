@@ -90,6 +90,14 @@ class Wedding extends Model
     }
 
     /**
+     * @return HasMany<GiftEnvelope, $this>
+     */
+    public function giftEnvelopes(): HasMany
+    {
+        return $this->hasMany(GiftEnvelope::class)->chaperone();
+    }
+
+    /**
      * @return HasManyThrough<ExpensePayment, Expense, $this>
      */
     public function expensePayments(): HasManyThrough
@@ -110,12 +118,14 @@ class Wedding extends Model
     }
 
     /**
-     * Whether any revenue or expense exists, trashed ones included. Once true, base_currency
-     * is locked, because every snapshotted base_* amount is expressed in it.
+     * Whether any revenue, expense or gift envelope exists, trashed ones included. Once true,
+     * base_currency is locked, because every snapshotted base_* amount and every envelope
+     * amount is expressed in it.
      */
     public function hasFinancialRecords(): bool
     {
         return $this->revenues()->withTrashed()->exists()
-            || $this->expenses()->withTrashed()->exists();
+            || $this->expenses()->withTrashed()->exists()
+            || $this->giftEnvelopes()->withTrashed()->exists();
     }
 }

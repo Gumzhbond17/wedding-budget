@@ -27,6 +27,24 @@
 }
 
 /*
+ * Tailwind v4 dropped the cursor: pointer that v3's preflight gave buttons, so clickable
+ * controls looked like plain text. Restoring it once here covers every UButton, select,
+ * tab and menu trigger instead of repeating a class on each. It sits in the base layer,
+ * so Nuxt UI's disabled:cursor-not-allowed utilities still win on disabled controls.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+}
+
+/*
  * flatpickr theme (DateInput). The stock stylesheet is light-only with hard-coded blue, so
  * these rules map it onto Nuxt UI's tokens: the calendar follows the primary color and
  * dark mode like every other control. Selectors repeat the stock ones at equal specificity

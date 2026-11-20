@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
  *
  * Category foreign keys are RESTRICT, so the database will not cascade through financial
  * records on its own. This action deletes children before parents inside one transaction:
- * payments -> expenses / revenues -> categories -> exchange_rates -> wedding.
+ * payments -> expenses / revenues / gift envelopes -> categories -> exchange_rates -> wedding.
  *
  * The query builder is used on purpose: it bypasses the SoftDeletes scope, so trashed
  * revenues and expenses are purged too instead of blocking the category delete.
@@ -39,6 +39,7 @@ final class DeleteWedding
             $payments->delete();
             DB::table('expenses')->where('wedding_id', $weddingId)->delete();
             DB::table('revenues')->where('wedding_id', $weddingId)->delete();
+            DB::table('gift_envelopes')->where('wedding_id', $weddingId)->delete();
             DB::table('categories')->where('wedding_id', $weddingId)->delete();
             DB::table('exchange_rates')->where('wedding_id', $weddingId)->delete();
             DB::table('weddings')->where('id', $weddingId)->delete();

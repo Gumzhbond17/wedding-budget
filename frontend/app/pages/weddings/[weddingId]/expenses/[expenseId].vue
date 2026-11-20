@@ -13,6 +13,7 @@ definePageMeta({
 })
 
 const { t, d } = useI18n()
+const categoryName = useCategoryName()
 const route = useRoute()
 const api = useApi()
 const toast = useToast()
@@ -142,7 +143,7 @@ async function deletePayment(): Promise<void> {
             {{ expense.description }}
           </h1>
           <p class="text-sm text-muted">
-            {{ expense.category?.name }}<template v-if="expense.vendor_name">
+            {{ categoryName(expense.category?.name) }}<template v-if="expense.vendor_name">
               · {{ expense.vendor_name }}
             </template>
             · {{ $t('expenses.fields.dueDate') }}: {{ date(expense.due_date) }}

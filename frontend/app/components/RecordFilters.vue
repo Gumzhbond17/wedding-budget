@@ -21,13 +21,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const categoryName = useCategoryName()
 
 // Reka UI selects cannot hold an empty value, so "all" stands for "no filter".
 const ALL = 'all'
 
 const categoryItems = computed(() => [
   { value: ALL, label: t('filters.allCategories') },
-  ...props.categories.map(category => ({ value: String(category.id), label: category.name }))
+  ...props.categories.map(category => ({ value: String(category.id), label: categoryName(category.name) }))
 ])
 const statusItems = computed(() => [
   { value: ALL, label: t('filters.allStatuses') },

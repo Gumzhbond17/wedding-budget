@@ -5,6 +5,7 @@ use App\Enums\Currency;
 use App\Models\Category;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use App\Services\DashboardSummaryService;
@@ -21,7 +22,7 @@ it('computes the summary totals', function () {
         ->and($dashboard['summary'])->toBe([
             'budget_target' => '250000000.00',
             // Trashed revenue excluded.
-            'revenue' => ['expected' => '50750000.00', 'received' => '143600000.00', 'total' => '194350000.00'],
+            'revenue' => ['expected' => '50750000.00', 'received' => '143600000.00', 'total' => '194350000.00', 'gift_envelopes' => '0.00'],
             'expenses' => [
                 // Cancelled E4 counts only its 1,000,000 forfeited deposit; trashed E6 not at all.
                 'estimated' => '188075000.00',
@@ -174,6 +175,28 @@ it('builds a continuous monthly cash flow from received revenue and payments', f
     ])->and(end($dashboard['cash_flow'])['cumulative'])->toBe($dashboard['summary']['net_cash_position']);
 });
 
+it('counts gift envelopes as received revenue in the base currency', function () {
+    $wedding = dashboardFixture()['wedding'];
+    GiftEnvelope::factory()->for($wedding)->create(['amount' => '500000.00', 'received_date' => '2026-11-05']);
+    GiftEnvelope::factory()->for($wedding)->create(['amount' => '1500000.00', 'received_date' => '2026-12-20']);
+    GiftEnvelope::factory()->for($wedding)->create(['amount' => '9000000.00', 'received_date' => '2026-11-05'])->delete();
+    GiftEnvelope::factory()->create(['amount' => '7000000.00']); // another wedding
+
+    $dashboard = app(DashboardSummaryService::class)->summarize($wedding);
+    $lak = collect($dashboard['per_currency'])->firstWhere('currency', Currency::LAK);
+
+    // 2,000,000 on top of the fixture's received 143,600,000; the trashed envelope is excluded.
+    expect($dashboard['summary']['revenue'])->toBe([
+        'expected' => '50750000.00', 'received' => '145600000.00', 'total' => '196350000.00', 'gift_envelopes' => '2000000.00',
+    ])
+        ->and($dashboard['summary']['net_cash_position'])->toBe('15600000.00')
+        ->and($dashboard['summary']['secured_gap'])->toBe('51845000.00')
+        ->and($lak['revenue']['received'])->toBe(['amount' => '102000000.00', 'base' => '102000000.00'])
+        ->and(collect($dashboard['cash_flow'])->pluck('inflow', 'month')->only(['2026-11', '2026-12'])->all())
+        ->toBe(['2026-11' => '500000.00', '2026-12' => '1500000.00'])
+        ->and(end($dashboard['cash_flow'])['cumulative'])->toBe('15600000.00');
+});
+
 it('lists unpaid balances due in the next 30 days in the expense currency', function () {
     ['wedding' => $wedding, 'expenses' => $expenses] = dashboardFixture();
 
@@ -216,7 +239,7 @@ it('returns zeros and empty lists for a new wedding', function () {
 
     $dashboard = app(DashboardSummaryService::class)->summarize($wedding);
 
-    expect($dashboard['summary']['revenue'])->toBe(['expected' => '0.00', 'received' => '0.00', 'total' => '0.00'])
+    expect($dashboard['summary']['revenue'])->toBe(['expected' => '0.00', 'received' => '0.00', 'total' => '0.00', 'gift_envelopes' => '0.00'])
         ->and($dashboard['summary']['expenses'])->toBe(['estimated' => '0.00', 'actual' => '0.00', 'paid' => '0.00', 'committed' => '0.00'])
         ->and($dashboard['summary']['funding_gap'])->toBe('0.00')
         ->and($dashboard['per_currency'])->toHaveCount(3)
@@ -250,6 +273,7 @@ it('runs a fixed number of queries whatever the number of records', function () 
 
     Expense::factory()->for($wedding)->count(20)->create(['due_date' => '2026-11-30']);
     Revenue::factory()->for($wedding)->received()->count(20)->create();
+    GiftEnvelope::factory()->for($wedding)->count(20)->create();
 
     expect($count())->toBe(DashboardSummaryService::QUERY_COUNT)->toBe(5);
 });

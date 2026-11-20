@@ -15,13 +15,14 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const categoryName = useCategoryName()
 const { format } = useCurrency()
 const palette = useChartTheme()
 
 const colors = computed(() => props.slices.map((_slice, index) => palette.value.series[index] ?? palette.value.neutral))
 
 const data = computed<ChartData<'doughnut'>>(() => ({
-  labels: props.slices.map(slice => slice.name),
+  labels: props.slices.map(slice => categoryName(slice.name)),
   datasets: [{
     data: props.slices.map(slice => chartValue(slice.committed.amount)),
     backgroundColor: colors.value,
@@ -89,7 +90,7 @@ const options = computed<ChartOptions<'doughnut'>>(() => ({
             class="size-3 shrink-0 rounded-sm"
             :style="{ background: colors[index] }"
           />
-          <span class="min-w-0 flex-1 truncate text-highlighted">{{ slice.name }}</span>
+          <span class="min-w-0 flex-1 truncate text-highlighted">{{ categoryName(slice.name) }}</span>
           <span class="tabular-nums text-muted">{{ $t('dashboard.breakdown.share', { percent: slice.share_percent }) }}</span>
           <span class="tabular-nums font-medium text-highlighted">{{ format(slice.committed) }}</span>
         </li>

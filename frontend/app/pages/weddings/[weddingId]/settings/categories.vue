@@ -8,6 +8,7 @@ import type { Category, CategoryType, CollectionResponse, Dashboard, ResourceRes
  * frontend never adds money up itself.
  */
 const { t } = useI18n()
+const categoryName = useCategoryName()
 const route = useRoute()
 const router = useRouter()
 const api = useApi()
@@ -106,7 +107,7 @@ async function confirmDelete(): Promise<void> {
     await load()
   } catch (error) {
     if (error instanceof ApiError && error.status === 409) {
-      deleteError.value = t('categories.inUse', { name: deleting.value.name })
+      deleteError.value = t('categories.inUse', { name: categoryName(deleting.value.name) })
     }
   } finally {
     deleteBusy.value = false
@@ -191,7 +192,7 @@ async function confirmDelete(): Promise<void> {
         >
           <div class="min-w-0 flex-1">
             <p class="truncate font-medium text-highlighted">
-              {{ category.name }}
+              {{ categoryName(category.name) }}
             </p>
             <p
               v-if="type === 'expense'"
@@ -205,14 +206,14 @@ async function confirmDelete(): Promise<void> {
             icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
-            :aria-label="$t('categories.edit', { name: category.name })"
+            :aria-label="$t('categories.edit', { name: categoryName(category.name) })"
             @click="openEdit(category)"
           />
           <UButton
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"
-            :aria-label="$t('categories.delete', { name: category.name })"
+            :aria-label="$t('categories.delete', { name: categoryName(category.name) })"
             @click="askDelete(category)"
           />
         </li>
@@ -229,7 +230,7 @@ async function confirmDelete(): Promise<void> {
 
     <ConfirmModal
       v-model:open="deleteOpen"
-      :title="$t('categories.deleteTitle', { name: deleting?.name ?? '' })"
+      :title="$t('categories.deleteTitle', { name: categoryName(deleting?.name) })"
       :description="$t('categories.deleteDescription')"
       :confirm-label="$t('common.delete')"
       :loading="deleteBusy"

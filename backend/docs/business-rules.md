@@ -16,8 +16,8 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
 - **Lookup**: the latest rate with `effective_date` on or before the transaction date.
   **Never fall back to a later rate.** If none exists, the save fails with a 422 validation
   error that names the currency pair and the date (`App\Exceptions\MissingExchangeRateException`).
-- **`base_currency` can only change** while the wedding has no revenues and no expenses
-  (soft-deleted ones included) and no exchange rates. Rates point to the old base, so the user
+- **`base_currency` can only change** while the wedding has no revenues, expenses or gift
+  envelopes (soft-deleted ones included) and no exchange rates. Rates point to the old base, so the user
   deletes them first; nothing is deleted implicitly.
 
 ## Rate snapshots
@@ -69,6 +69,33 @@ first when a rule changes. Schema-level guarantees are in `database/ERD.md`.
 - **Cancelled expenses**: their payments still count as paid (forfeited deposit), but
   outstanding = 0, and they are excluded from upcoming payments and commitments on the dashboard.
 
+## Gift envelopes
+
+Money guests put in their invitation card envelope, one row per guest
+(`App\Actions\GiftEnvelopes\ManageGiftEnvelope`, `/api/v1/weddings/{wedding}/gift-envelopes`).
+Added as an approved exception to the MVP "no guests" scope: gift records only, no guest list,
+RSVP or seating.
+
+- Fields: `full_name`, `amount` (> 0), `guest_group`, `received_date` (required), `notes`.
+- **Always in the wedding's `base_currency`**: no currency, rate or `base_amount` columns, so there
+  is no snapshot. Any envelope (soft-deleted included) locks `base_currency`, like revenues and
+  expenses.
+- `guest_group` is a fixed list (`App\Enums\GuestGroup`): `groom_family`, `bride_family`,
+  `relatives`, `friends`, `colleagues`, `neighbors`, `other`.
+- **Counted as received revenue** on the dashboard: in `revenue.received` and `revenue.total`, in the
+  base currency's per-currency `received` row, and in the cash-flow inflow by `received_date`, so
+  net cash position and the gaps include them. `revenue.gift_envelopes` shows their part of received.
+  Envelopes have no revenue category.
+- An expected "Guest Gifts" revenue is an estimate. Once envelopes are recorded, the user lowers or
+  deletes that estimate; it is never reduced automatically, so it would otherwise count twice in
+  `revenue.total` and the funding gap.
+- The list (`?search=&guest_group=&date_from=&date_to=&sort=&per_page=`) returns `meta.summary`:
+  count and total per guest group for the whole wedding, every group listed, filters not applied.
+  Search matches any part of the full name; `%` and `_` match literally.
+- Soft deleted; trashed envelopes are excluded from every total and export.
+- CSV export: `GET /api/v1/weddings/{wedding}/exports/gift-envelopes`, same rules as the other
+  exports, with the amount in the base currency.
+
 ## Dashboard
 
 Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{wedding}/dashboard`).
@@ -86,7 +113,8 @@ Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{we
 
 | Figure | Definition |
 |---|---|
-| Revenue expected / received / total | SUM `base_amount` by status; total = expected + received |
+| Revenue expected / received / total | SUM `base_amount` by status, plus gift envelope amounts in received; total = expected + received |
+| Gift envelopes | SUM of envelope `amount` (already part of received) |
 | Expenses estimated / actual / paid / committed | SUM of the base columns, cancelled rule above; paid includes overpayments as paid |
 | Remaining budget | `budget_target` − actual expenses (may be negative) |
 | Net cash position | received revenue − paid expenses |
@@ -105,7 +133,7 @@ Implemented by `App\Services\DashboardSummaryService` (`GET /api/v1/weddings/{we
 - **Expense breakdown**: committed per category (categories with nothing committed omitted),
   largest committed first (ties by name), with a share rounded per slice to 2 decimals (shares
   may add up to 99.99–100.01).
-- **Monthly cash flow**: inflow = received revenue by `received_date`; outflow = payments by
+- **Monthly cash flow**: inflow = received revenue and gift envelopes by `received_date`; outflow = payments by
   `paid_date` at their own rate snapshot (payments on cancelled expenses included). Months
   between the first and last movement are filled with zeros; `cumulative` ends at the net cash
   position.

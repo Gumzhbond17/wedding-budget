@@ -19,6 +19,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ saved: [revenue: Revenue] }>()
 
 const { t } = useI18n()
+const categoryName = useCategoryName()
 const api = useApi()
 const weddings = useWeddingsStore()
 const base = computed(() => weddings.baseCurrency)
@@ -76,7 +77,7 @@ type Schema = z.output<typeof schema.value>
 const form = useTemplateRef('form')
 const submitting = ref(false)
 
-const categoryItems = computed(() => props.categories.map(category => ({ value: category.id, label: category.name })))
+const categoryItems = computed(() => props.categories.map(category => ({ value: category.id, label: categoryName(category.name) })))
 const statusItems = computed(() => (['expected', 'received'] as const).map(value => ({ value, label: t(`status.${value}`) })))
 const methodItems = computed(() => [
   { value: NONE, label: t('paymentMethod.none') },

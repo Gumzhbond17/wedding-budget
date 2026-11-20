@@ -20,6 +20,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ saved: [expense: Expense] }>()
 
 const { t } = useI18n()
+const categoryName = useCategoryName()
 const api = useApi()
 const weddings = useWeddingsStore()
 const base = computed(() => weddings.baseCurrency)
@@ -76,7 +77,7 @@ const submitting = ref(false)
 const hasPayments = computed(() => !!props.expense && /[1-9]/.test(props.expense.paid_amount.amount))
 const derivedStatus = computed(() => (props.expense && !(USER_STATUSES as readonly string[]).includes(props.expense.status) ? props.expense.status : null))
 
-const categoryItems = computed(() => props.categories.map(category => ({ value: category.id, label: category.name })))
+const categoryItems = computed(() => props.categories.map(category => ({ value: category.id, label: categoryName(category.name) })))
 const statusItems = computed(() => USER_STATUSES.map(value => ({ value, label: t(`status.${value}`) })))
 
 watch(open, (isOpen) => {

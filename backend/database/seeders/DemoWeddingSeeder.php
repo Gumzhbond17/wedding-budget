@@ -5,11 +5,13 @@ namespace Database\Seeders;
 use App\Actions\ExchangeRates\ManageExchangeRate;
 use App\Actions\Expenses\ManageExpense;
 use App\Actions\Expenses\ManageExpensePayment;
+use App\Actions\GiftEnvelopes\ManageGiftEnvelope;
 use App\Actions\Revenues\ManageRevenue;
 use App\Actions\Weddings\CreateWedding;
 use App\Enums\CategoryType;
 use App\Enums\Currency;
 use App\Enums\ExpenseStatus;
+use App\Enums\GuestGroup;
 use App\Enums\PaymentMethod;
 use App\Enums\RevenueStatus;
 use App\Models\Category;
@@ -35,6 +37,7 @@ class DemoWeddingSeeder extends Seeder
         private readonly ManageRevenue $revenues,
         private readonly ManageExpense $expenses,
         private readonly ManageExpensePayment $payments,
+        private readonly ManageGiftEnvelope $giftEnvelopes,
     ) {}
 
     public function run(): void
@@ -53,6 +56,30 @@ class DemoWeddingSeeder extends Seeder
         $this->seedPlannedAmounts($wedding);
         $this->seedRevenues($wedding);
         $this->seedExpenses($wedding);
+        $this->seedGiftEnvelopes($wedding);
+    }
+
+    /**
+     * Envelopes from guests who cannot come on the day and gave theirs early, in LAK (base).
+     */
+    private function seedGiftEnvelopes(Wedding $wedding): void
+    {
+        foreach ([
+            ['Bounmy Sengdara', '1000000.00', GuestGroup::GroomFamily, '2026-11-02', 'Uncle, working in Pakse'],
+            ['Khamla Inthavong', '500000.00', GuestGroup::BrideFamily, '2026-11-03', null],
+            ['Somphone Keola', '300000.00', GuestGroup::Friends, '2026-11-05', 'University friend'],
+            ['Vilay Chanthavong', '200000.00', GuestGroup::Colleagues, '2026-11-08', null],
+            ['Noy Phommavong', '2000000.00', GuestGroup::Relatives, '2026-11-10', 'Cousin, abroad on the day'],
+            ['Thongdy Sisouk', '150000.00', GuestGroup::Neighbors, '2026-11-12', null],
+        ] as [$name, $amount, $group, $date, $notes]) {
+            $this->giftEnvelopes->create($wedding, [
+                'full_name' => $name,
+                'amount' => $amount,
+                'guest_group' => $group->value,
+                'received_date' => $date,
+                'notes' => $notes,
+            ]);
+        }
     }
 
     /**

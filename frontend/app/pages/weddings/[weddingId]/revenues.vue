@@ -12,6 +12,7 @@ definePageMeta({
 })
 
 const { t, d } = useI18n()
+const categoryName = useCategoryName()
 const api = useApi()
 const toast = useToast()
 const { format } = useCurrency()
@@ -182,7 +183,7 @@ async function confirmDelete(): Promise<void> {
           <span class="font-medium text-highlighted">{{ row.original.source }}</span>
         </template>
         <template #category-cell="{ row }">
-          {{ row.original.category?.name }}
+          {{ categoryName(row.original.category?.name) }}
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />
@@ -239,7 +240,7 @@ async function confirmDelete(): Promise<void> {
                   {{ revenue.source }}
                 </p>
                 <p class="text-sm text-muted">
-                  {{ revenue.category?.name }} · {{ transactionDate(revenue) }}
+                  {{ categoryName(revenue.category?.name) }} · {{ transactionDate(revenue) }}
                 </p>
               </div>
               <StatusBadge :status="revenue.status" />

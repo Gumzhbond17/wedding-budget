@@ -20,6 +20,7 @@
     "allWeddings": "All weddings",
     "dashboard": "Dashboard",
     "expenses": "Expenses",
+    "giftEnvelopes": "Gift envelopes",
     "language": "Language",
     "logout": "Log out",
     "revenues": "Revenue",
@@ -64,6 +65,47 @@
   },
   "records": {
     "deleteDescription": "It is removed from lists and totals. It stays in the history, so its category still counts as in use."
+  },
+  "guestGroup": {
+    "groom_family": "Groom's family",
+    "bride_family": "Bride's family",
+    "relatives": "Relatives",
+    "friends": "Friends",
+    "colleagues": "Colleagues",
+    "neighbors": "Neighbors",
+    "other": "Other"
+  },
+  "giftEnvelopes": {
+    "title": "Gift envelopes",
+    "help": "Money guests gave in their invitation card, in {currency}. Counted as received revenue; lower any expected \"Guest Gifts\" estimate so it is not counted twice.",
+    "add": "Add envelope",
+    "empty": "No envelopes yet",
+    "emptyHelp": "Record each card with the guest's name and the amount inside.",
+    "saved": "Envelope from {name} saved",
+    "deleted": "Envelope deleted",
+    "deleteTitle": "Delete the envelope from \"{name}\"?",
+    "deleteDescription": "It is removed from the list and from revenue totals.",
+    "search": "Search by name",
+    "allGroups": "All groups",
+    "sortLabel": "Sort",
+    "sort": {
+      "created_at": "Newest first",
+      "full_name": "Name A–Z",
+      "amount": "Largest amount",
+      "received_date": "Latest received"
+    },
+    "totalCount": "No envelopes | 1 envelope | {count} envelopes",
+    "fields": {
+      "fullName": "Full name",
+      "group": "Group",
+      "description": "Description"
+    },
+    "form": {
+      "createTitle": "New gift envelope",
+      "editTitle": "Edit gift envelope",
+      "amountHint": "In {currency}",
+      "saveAndAdd": "Save and add another"
+    }
   },
   "revenues": {
     "title": "Revenue",
@@ -226,6 +268,7 @@
   "dashboard": {
     "title": "Dashboard",
     "totalsIn": "Totals in {currency}",
+    "giftEnvelopesIncluded": "of which gift envelopes",
     "failed": "The dashboard could not be loaded",
     "summaryLabel": "Summary",
     "cards": {
@@ -333,6 +376,7 @@
   "exports": {
     "revenues": "Export revenues",
     "expenses": "Export expenses",
+    "giftEnvelopes": "Export envelopes",
     "done": "Export downloaded"
   },
   "settings": {
@@ -368,6 +412,26 @@
       "planned": "Planned budget",
       "plannedHelp": "Leave empty if you have no budget for this group yet."
     }
+  },
+  "categoryNames": {
+    "familyContribution": "Family Contribution",
+    "guestGifts": "Guest Gifts",
+    "personalSavings": "Personal Savings",
+    "sponsorship": "Sponsorship",
+    "loan": "Loan",
+    "other": "Other",
+    "venue": "Venue",
+    "catering": "Catering",
+    "attire": "Attire",
+    "photographyVideo": "Photography & Video",
+    "decorationFlowers": "Decoration & Flowers",
+    "musicEntertainment": "Music & Entertainment",
+    "invitations": "Invitations",
+    "ringsJewelry": "Rings & Jewelry",
+    "transportation": "Transportation",
+    "ceremony": "Ceremony",
+    "honeymoon": "Honeymoon",
+    "miscellaneous": "Miscellaneous"
   },
   "rates": {
     "preview": {

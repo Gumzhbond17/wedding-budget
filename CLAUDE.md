@@ -46,6 +46,11 @@ Rules:
 
 ## Scope (MVP only — do NOT add vendors, guests, or collaborators)
 
+Approved exception (2026-11-20): **gift envelopes**, one record per guest's invitation card
+money (full name, amount in base currency, guest group, received date, notes), counted as
+received revenue. Gift records only: still no guest list, RSVP or seating. Rules in
+`backend/docs/business-rules.md`.
+
 ### 1. Currency Rules (IMPORTANT)
 - Supported currencies: **LAK (default/base)**, **USD**, **THB**
 - PHP backed enum `Currency` with code, symbol (₭, $, ฿), display decimals, and locale

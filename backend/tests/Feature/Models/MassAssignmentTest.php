@@ -2,6 +2,7 @@
 
 use App\Models\Expense;
 use App\Models\ExpensePayment;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use Illuminate\Database\Eloquent\MassAssignmentException;
@@ -19,6 +20,7 @@ it('refuses to mass assign server-owned columns', function (string $model, strin
     'revenue rate' => [Revenue::class, 'exchange_rate'],
     'revenue base amount' => [Revenue::class, 'base_amount'],
     'revenue wedding' => [Revenue::class, 'wedding_id'],
+    'gift envelope wedding' => [GiftEnvelope::class, 'wedding_id'],
     'expense rate' => [Expense::class, 'exchange_rate'],
     'expense base estimate' => [Expense::class, 'base_estimated_amount'],
     'expense base actual' => [Expense::class, 'base_actual_amount'],

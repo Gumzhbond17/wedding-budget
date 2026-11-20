@@ -4,6 +4,7 @@ use App\Actions\Weddings\UpdateWedding;
 use App\Enums\Currency;
 use App\Models\ExchangeRate;
 use App\Models\Expense;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use Illuminate\Validation\ValidationException;
@@ -24,8 +25,9 @@ it('locks the base currency once records or rates exist', function (Closure $arr
         ->toThrow(ValidationException::class, $message)
         ->and($wedding->refresh()->base_currency)->toBe(Currency::LAK);
 })->with([
-    'a revenue' => [fn (Wedding $w) => Revenue::factory()->for($w)->create(), 'cannot change once revenues or expenses exist'],
-    'a soft-deleted expense' => [fn (Wedding $w) => Expense::factory()->for($w)->create()->delete(), 'cannot change once revenues or expenses exist'],
+    'a revenue' => [fn (Wedding $w) => Revenue::factory()->for($w)->create(), 'cannot change once revenues, expenses or gift envelopes exist'],
+    'a soft-deleted expense' => [fn (Wedding $w) => Expense::factory()->for($w)->create()->delete(), 'cannot change once revenues, expenses or gift envelopes exist'],
+    'a gift envelope' => [fn (Wedding $w) => GiftEnvelope::factory()->for($w)->create(), 'cannot change once revenues, expenses or gift envelopes exist'],
     'an exchange rate' => [fn (Wedding $w) => ExchangeRate::factory()->for($w)->create(), 'Delete the exchange rates first'],
 ]);
 

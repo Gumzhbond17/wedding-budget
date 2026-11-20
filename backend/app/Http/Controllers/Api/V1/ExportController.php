@@ -27,4 +27,9 @@ class ExportController extends Controller implements HasMiddleware
     {
         return $exporter->expenses($wedding);
     }
+
+    public function giftEnvelopes(Wedding $wedding, RecordsCsvExporter $exporter): StreamedResponse
+    {
+        return $exporter->giftEnvelopes($wedding);
+    }
 }

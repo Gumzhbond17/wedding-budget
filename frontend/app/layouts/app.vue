@@ -23,6 +23,7 @@ const sectionItems = computed<NavigationMenuItem[]>(() => {
     : [
         { label: t('nav.dashboard'), icon: 'i-lucide-layout-dashboard', to: `/weddings/${id}`, exact: true },
         { label: t('nav.revenues'), icon: 'i-lucide-hand-coins', to: `/weddings/${id}/revenues` },
+        { label: t('nav.giftEnvelopes'), icon: 'i-lucide-mail', to: `/weddings/${id}/gift-envelopes` },
         { label: t('nav.expenses'), icon: 'i-lucide-receipt', to: `/weddings/${id}/expenses` },
         { label: t('nav.settings'), icon: 'i-lucide-settings', to: `/weddings/${id}/settings` }
       ]

@@ -15,6 +15,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const categoryName = useCategoryName()
 const { format } = useCurrency()
 const palette = useChartTheme()
 
@@ -25,7 +26,7 @@ const NARROW_CHART = 480
 const rows = computed(() => props.categories.filter(category => category.planned !== null || !isZero(category.committed)))
 
 const data = computed<ChartData<'bar'>>(() => ({
-  labels: rows.value.map(category => category.name),
+  labels: rows.value.map(category => categoryName(category.name)),
   datasets: [
     {
       label: t('dashboard.budget.planned'),
@@ -155,7 +156,7 @@ const height = computed(() => `${Math.max(160, rows.value.length * 44 + 40)}px`)
           :key="category.id"
           class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2"
         >
-          <span class="font-medium text-highlighted">{{ category.name }}</span>
+          <span class="font-medium text-highlighted">{{ categoryName(category.name) }}</span>
           <span class="flex flex-wrap items-center justify-end gap-2">
             <span class="text-muted tabular-nums">
               {{ format(category.committed) }} / {{ category.planned ? format(category.planned) : '—' }}

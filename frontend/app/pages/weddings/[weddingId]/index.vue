@@ -12,6 +12,7 @@ definePageMeta({
 })
 
 const { t, d } = useI18n()
+const categoryName = useCategoryName()
 const { weddingId, wedding } = useCurrentWedding()
 const { label } = useCurrency()
 const { dashboard, loading, failed, load } = useDashboard(weddingId)
@@ -122,6 +123,7 @@ const asOf = computed(() => (dashboard.value ? d(dateForDisplay(dashboard.value.
           :money="summary.revenue.total"
           :rows="[
             { label: $t('status.received'), money: summary.revenue.received },
+            { label: $t('dashboard.giftEnvelopesIncluded'), money: summary.revenue.gift_envelopes },
             { label: $t('status.expected'), money: summary.revenue.expected }
           ]"
         />
@@ -247,7 +249,7 @@ const asOf = computed(() => (dashboard.value ? d(dateForDisplay(dashboard.value.
                   <span class="min-w-0">
                     <span class="block font-medium text-highlighted">{{ payment.description }}</span>
                     <span class="block text-xs text-muted">
-                      {{ [payment.category.name, payment.vendor_name].filter(Boolean).join(' · ') }}
+                      {{ [categoryName(payment.category.name), payment.vendor_name].filter(Boolean).join(' · ') }}
                     </span>
                     <span class="mt-0.5 inline-flex items-center gap-1 text-xs text-muted">
                       <UIcon
@@ -293,7 +295,7 @@ const asOf = computed(() => (dashboard.value ? d(dateForDisplay(dashboard.value.
                   :to="{ path: `/weddings/${weddingId}/expenses`, query: { category_id: String(category.id) } }"
                   class="flex flex-wrap items-center justify-between gap-2 py-2 hover:bg-elevated/50"
                 >
-                  <span class="font-medium text-highlighted">{{ category.name }}</span>
+                  <span class="font-medium text-highlighted">{{ categoryName(category.name) }}</span>
                   <span class="flex flex-wrap items-center justify-end gap-2 text-sm">
                     <span class="tabular-nums text-muted">
                       {{ $t('dashboard.overBudget.amounts', { committed: formatMoneyObject(category.committed), planned: category.planned ? formatMoneyObject(category.planned) : '—' }) }}
@@ -328,7 +330,7 @@ const asOf = computed(() => (dashboard.value ? d(dateForDisplay(dashboard.value.
                   :to="{ path: `/weddings/${weddingId}/expenses`, query: { category_id: String(category.category_id) } }"
                   class="flex flex-wrap items-center justify-between gap-2 py-2 hover:bg-elevated/50"
                 >
-                  <span class="font-medium text-highlighted">{{ category.name }}</span>
+                  <span class="font-medium text-highlighted">{{ categoryName(category.name) }}</span>
                   <span class="flex items-center gap-2 text-sm">
                     <BudgetHealthBadge :health="null" />
                     <span class="tabular-nums font-medium text-highlighted">{{ formatMoneyObject(category.committed) }}</span>

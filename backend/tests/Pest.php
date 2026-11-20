@@ -5,6 +5,7 @@ use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\User;
 use App\Models\Wedding;
@@ -62,6 +63,7 @@ function seedWeddingGraph(string $currency = 'LAK', ?string $receiptPath = null)
         'wedding_id' => $wedding, 'category_id' => $revenueCategory, 'source' => 'Parents', 'amount' => '50000000.00',
         'currency' => 'LAK', 'exchange_rate' => '1', 'base_amount' => '50000000.00', 'created_at' => $now,
     ]);
+    DB::table('gift_envelopes')->insert([envelopeRow($wedding), [...envelopeRow($wedding), 'deleted_at' => $now]]);
     $expense = DB::table('expenses')->insertGetId(expenseRow($wedding, $expenseCategory, $currency));
     DB::table('expense_payments')->insert([...paymentRow($expense, $currency), 'receipt_path' => $receiptPath]);
 
@@ -89,6 +91,15 @@ function expenseRow(int $wedding, int $category, string $currency = 'LAK'): arra
 }
 
 /** @return array<string, mixed> */
+function envelopeRow(int $wedding): array
+{
+    return [
+        'wedding_id' => $wedding, 'full_name' => 'Bounmy Sengdara', 'amount' => '500000.00', 'guest_group' => 'friends',
+        'received_date' => '2026-11-10', 'deleted_at' => null, 'created_at' => now(),
+    ];
+}
+
+/** @return array<string, mixed> */
 function paymentRow(int $expense, string $currency = 'LAK'): array
 {
     return [
@@ -100,7 +111,7 @@ function paymentRow(int $expense, string $currency = 'LAK'): array
 /**
  * Row counts per domain table that belong to the given wedding.
  *
- * @return array{weddings: int, categories: int, exchange_rates: int, revenues: int, expenses: int, expense_payments: int}
+ * @return array{weddings: int, categories: int, exchange_rates: int, revenues: int, gift_envelopes: int, expenses: int, expense_payments: int}
  */
 function weddingRowCounts(int $wedding): array
 {
@@ -111,6 +122,7 @@ function weddingRowCounts(int $wedding): array
         'categories' => DB::table('categories')->where('wedding_id', $wedding)->count(),
         'exchange_rates' => DB::table('exchange_rates')->where('wedding_id', $wedding)->count(),
         'revenues' => DB::table('revenues')->where('wedding_id', $wedding)->count(),
+        'gift_envelopes' => DB::table('gift_envelopes')->where('wedding_id', $wedding)->count(),
         'expenses' => DB::table('expenses')->where('wedding_id', $wedding)->count(),
         'expense_payments' => DB::table('expense_payments')->whereIn('expense_id', $expenseIds)->count(),
     ];
@@ -126,7 +138,7 @@ function weddingRowCounts(int $wedding): array
  * A wedding owned by $user with one of every nested resource, including a payment with a
  * receipt path. Records are created through factories; the receipts disk should be faked.
  *
- * @return array{wedding: Wedding, category: Category, exchangeRate: ExchangeRate, revenue: Revenue, expense: Expense, payment: ExpensePayment}
+ * @return array{wedding: Wedding, category: Category, exchangeRate: ExchangeRate, revenue: Revenue, giftEnvelope: GiftEnvelope, expense: Expense, payment: ExpensePayment}
  */
 function weddingGraphFor(User $user): array
 {
@@ -140,6 +152,7 @@ function weddingGraphFor(User $user): array
         'category' => Category::factory()->for($wedding)->create(),
         'exchangeRate' => ExchangeRate::factory()->for($wedding)->create(),
         'revenue' => Revenue::factory()->for($wedding)->create(),
+        'giftEnvelope' => GiftEnvelope::factory()->for($wedding)->create(),
         'expense' => $expense,
         'payment' => $payment,
     ];

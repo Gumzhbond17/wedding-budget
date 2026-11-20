@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Expense;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use Closure;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * CSV exports of a wedding's revenues and expenses (soft-deleted records excluded).
+ * CSV exports of a wedding's revenues, expenses and gift envelopes (soft-deleted records excluded).
  *
  * - Streamed in chunks of CHUNK rows, so memory stays flat however many records there are.
  * - UTF-8 with a BOM: without it Excel guesses a legacy code page and Lao text is garbled.
@@ -78,6 +79,25 @@ final class RecordsCsvExporter
     }
 
     /**
+     * Envelope amounts are already in the base currency, so there is no rate column.
+     */
+    public function giftEnvelopes(Wedding $wedding): StreamedResponse
+    {
+        $base = $wedding->base_currency->value;
+
+        return $this->stream($wedding, 'gift-envelopes', $wedding->giftEnvelopes(), [
+            'ID', 'Full name', 'Guest group', 'Received date', "Amount ({$base})", 'Notes',
+        ], fn (GiftEnvelope $envelope): array => [
+            $envelope->id,
+            $envelope->full_name,
+            $envelope->guest_group->value,
+            $envelope->received_date->toDateString(),
+            $envelope->amount,
+            $envelope->notes,
+        ]);
+    }
+
+    /**
      * Neutralize spreadsheet formulas (OWASP "CSV injection"): a cell starting with = + - @
      * (or a tab / carriage return, which some spreadsheets strip before parsing) is prefixed with
      * a single quote, so text like "=HYPERLINK(...)" in a vendor name is shown, never run.
@@ -91,9 +111,9 @@ final class RecordsCsvExporter
     }
 
     /**
-     * @param  HasMany<covariant Revenue|Expense, Wedding>  $records
+     * @param  HasMany<covariant Revenue|Expense|GiftEnvelope, Wedding>  $records
      * @param  list<string>  $header
-     * @param  Closure(Revenue|Expense): list<mixed>  $row
+     * @param  Closure(Revenue|Expense|GiftEnvelope): list<mixed>  $row
      */
     private function stream(Wedding $wedding, string $type, HasMany $records, array $header, Closure $row): StreamedResponse
     {

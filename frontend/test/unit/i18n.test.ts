@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import en from '../../i18n/locales/en.json'
 import lo from '../../i18n/locales/lo.json'
+import { DEFAULT_CATEGORY_KEYS } from '../../app/composables/useCategoryName'
+import { GUEST_GROUPS } from '../../app/utils/guestGroups'
 
 /*
  * Every translation key the app uses must exist in en.json (the fallback for every
@@ -56,7 +58,18 @@ const dynamicPrefixes = new Set(sources.flatMap(({ code }) =>
 describe('translation keys', () => {
   it('finds the keys used in app/', () => {
     expect(staticKeys.size).toBeGreaterThan(30)
-    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency', 'categories.form.createTitle', 'status', 'paymentMethod', 'dashboard.health', 'dashboard.gap', 'dashboard.perCurrency', 'dashboard.start']))
+    expect(dynamicPrefixes).toEqual(new Set(['weddings.status', 'currency', 'categories.form.createTitle', 'status', 'paymentMethod', 'dashboard.health', 'dashboard.gap', 'dashboard.perCurrency', 'dashboard.start', 'categoryNames', 'guestGroup', 'giftEnvelopes.sort']))
+  })
+
+  it('translates exactly the default categories the backend seeds', () => {
+    // The display lookup matches stored names, so it must follow CategoryType::defaultNames().
+    const enumSource = readFileSync(fileURLToPath(new URL('../../../backend/app/Enums/CategoryType.php', import.meta.url)), 'utf8')
+    const seeded = [...enumSource.matchAll(/^\s+'([^']+)',$/gm)].map(match => match[1]!).sort()
+
+    expect(Object.keys(DEFAULT_CATEGORY_KEYS).sort()).toEqual(seeded)
+    // English shows the stored name unchanged.
+    expect(Object.entries(DEFAULT_CATEGORY_KEYS).every(([name, key]) => lookup(en, `categoryNames.${key}`) === name)).toBe(true)
+    expect(Object.keys(lookup(en, 'categoryNames') as object).sort()).toEqual(Object.values(DEFAULT_CATEGORY_KEYS).sort())
   })
 
   it.each([...staticKeys].sort())('en.json has "%s"', (key) => {
@@ -75,6 +88,7 @@ describe('translation keys', () => {
     expect(Object.keys(lookup(en, 'status') as object).sort())
       .toEqual(['booked', 'cancelled', 'expected', 'paid', 'partially_paid', 'planned', 'received'])
     expect(Object.keys(lookup(en, 'paymentMethod') as object).sort()).toEqual(['bank_transfer', 'cash', 'none', 'other'])
+    expect(Object.keys(lookup(en, 'guestGroup') as object).sort()).toEqual([...GUEST_GROUPS].sort())
   })
 
   // Top-level keys starting with "_" are file metadata (JSON has no comments), e.g. the draft note.

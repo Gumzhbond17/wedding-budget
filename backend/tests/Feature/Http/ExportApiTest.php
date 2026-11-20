@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\Currency;
+use App\Enums\GuestGroup;
 use App\Models\Category;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\Wedding;
 use App\Services\RecordsCsvExporter;
@@ -45,6 +47,25 @@ it('exports revenues with original amount, currency, rate and base amount', func
             'Amount', 'Currency', 'Exchange rate', 'Base amount (LAK)', 'Notes'],
         [(string) $revenue->id, 'ຂອງຂວັນ', 'ພໍ່ແມ່ເຈົ້າບ່າວ', 'expected', '2026-12-01', '', '',
             '1500.00', 'USD', '21850.00000000', '32775000.00', ''],
+    ]);
+});
+
+it('exports gift envelopes in the base currency, escaping formulas', function () {
+    $wedding = Wedding::factory()->create(['name' => 'Vanh & Noy']);
+    $envelope = GiftEnvelope::factory()->for($wedding)->create([
+        'full_name' => 'ທ້າວ ບຸນມີ', 'amount' => '500000.00', 'guest_group' => GuestGroup::Friends,
+        'received_date' => '2027-02-20', 'notes' => '=HYPERLINK("x")',
+    ]);
+    GiftEnvelope::factory()->for($wedding)->create()->delete();
+    GiftEnvelope::factory()->create(); // another wedding
+
+    $response = $this->actingAs($wedding->user)->get(route('v1.weddings.exports.gift-envelopes', $wedding))
+        ->assertOk()
+        ->assertHeader('Content-Disposition', "attachment; filename=vanh-noy-gift-envelopes-2026-11-18.csv; filename*=utf-8''Vanh-%26-Noy-gift-envelopes-2026-11-18.csv");
+
+    expect(csvRows($response))->toBe([
+        ['ID', 'Full name', 'Guest group', 'Received date', 'Amount (LAK)', 'Notes'],
+        [(string) $envelope->id, 'ທ້າວ ບຸນມີ', 'friends', '2027-02-20', '500000.00', '\'=HYPERLINK("x")'],
     ]);
 });
 

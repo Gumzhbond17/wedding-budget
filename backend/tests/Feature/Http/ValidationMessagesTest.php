@@ -4,6 +4,7 @@ use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Expense;
 use App\Models\ExpensePayment;
+use App\Models\GiftEnvelope;
 use App\Models\Revenue;
 use App\Models\User;
 use App\Models\Wedding;
@@ -111,7 +112,9 @@ it('explains why the base currency cannot change', function (Closure $arrange, s
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['base_currency' => $message]);
 })->with([
-    'records exist' => [fn (Wedding $wedding) => Revenue::factory()->for($wedding)->create(), 'The base currency cannot change once revenues or expenses exist (including deleted ones).'],
+    'records exist' => [fn (Wedding $wedding) => Revenue::factory()->for($wedding)->create(), 'The base currency cannot change once revenues, expenses or gift envelopes exist (including deleted ones).'],
+    // Envelope amounts are stored in the base currency, so one trashed envelope is enough to lock it.
+    'gift envelopes exist' => [fn (Wedding $wedding) => GiftEnvelope::factory()->for($wedding)->create()->delete(), 'The base currency cannot change once revenues, expenses or gift envelopes exist (including deleted ones).'],
     'rates exist' => [fn (Wedding $wedding) => ExchangeRate::factory()->for($wedding)->create(), 'Delete the exchange rates first: they convert into the current base currency.'],
 ]);
 

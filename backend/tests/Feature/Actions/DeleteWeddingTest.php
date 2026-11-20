@@ -12,7 +12,7 @@ it('deletes a wedding with all of its data, including soft-deleted records', fun
     $other = seedWeddingGraph();
 
     expect(weddingRowCounts($ids['wedding']))->toBe([
-        'weddings' => 1, 'categories' => 2, 'exchange_rates' => 1, 'revenues' => 1, 'expenses' => 2, 'expense_payments' => 2,
+        'weddings' => 1, 'categories' => 2, 'exchange_rates' => 1, 'revenues' => 1, 'gift_envelopes' => 2, 'expenses' => 2, 'expense_payments' => 2,
     ]);
 
     app(DeleteWedding::class)->handle(Wedding::query()->findOrFail($ids['wedding']));

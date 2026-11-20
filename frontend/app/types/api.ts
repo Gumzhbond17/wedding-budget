@@ -96,6 +96,28 @@ export interface Revenue {
   updated_at: IsoDateTime | null
 }
 
+/** App\Enums\GuestGroup; the ordered list is GUEST_GROUPS in utils/guestGroups.ts. */
+export type GuestGroup = 'groom_family' | 'bride_family' | 'relatives' | 'friends' | 'colleagues' | 'neighbors' | 'other'
+
+/** Invitation card money from one guest; amount is always in the wedding's base currency. */
+export interface GiftEnvelope {
+  id: number
+  full_name: string
+  amount: Money
+  guest_group: GuestGroup
+  received_date: IsoDate
+  notes: string | null
+  created_at: IsoDateTime | null
+  updated_at: IsoDateTime | null
+}
+
+/** meta.summary of the envelope list: the whole wedding, list filters not applied. */
+export interface GiftEnvelopeSummary {
+  count: number
+  total: Money
+  groups: Array<{ guest_group: GuestGroup, count: number, total: Money }>
+}
+
 export interface Receipt {
   original_name: string
   mime_type: string
@@ -154,7 +176,8 @@ export interface Dashboard {
   base_currency: CurrencyCode
   summary: {
     budget_target: Money
-    revenue: { expected: Money, received: Money, total: Money }
+    /** gift_envelopes is already included in received. */
+    revenue: { expected: Money, received: Money, total: Money, gift_envelopes: Money }
     expenses: { estimated: Money, actual: Money, paid: Money, committed: Money }
     remaining_budget: Money
     net_cash_position: Money

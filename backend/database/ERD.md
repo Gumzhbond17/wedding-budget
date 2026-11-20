@@ -10,6 +10,7 @@ erDiagram
     weddings ||--o{ exchange_rates : "manual rates"
     weddings ||--o{ revenues : has
     weddings ||--o{ expenses : has
+    weddings ||--o{ gift_envelopes : "guest gifts"
     categories ||--o{ revenues : "classifies (same wedding)"
     categories ||--o{ expenses : "classifies (same wedding)"
     expenses ||--o{ expense_payments : "paid by (same currency)"
@@ -63,6 +64,17 @@ erDiagram
         date expected_date "nullable"
         date received_date "nullable"
         varchar payment_method "cash|bank_transfer|other, nullable"
+        text notes "nullable"
+        timestamp deleted_at "soft delete"
+    }
+
+    gift_envelopes {
+        bigint id PK
+        bigint wedding_id FK
+        varchar full_name
+        decimal amount "20,2 base currency, > 0"
+        varchar guest_group "groom_family|bride_family|relatives|friends|colleagues|neighbors|other"
+        date received_date
         text notes "nullable"
         timestamp deleted_at "soft delete"
     }
@@ -122,7 +134,7 @@ erDiagram
 
 | Foreign key | On delete | Why |
 |---|---|---|
-| `categories.wedding_id`, `exchange_rates.wedding_id`, `revenues.wedding_id`, `expenses.wedding_id` | CASCADE | Owned by the wedding. |
+| `categories.wedding_id`, `exchange_rates.wedding_id`, `revenues.wedding_id`, `expenses.wedding_id`, `gift_envelopes.wedding_id` | CASCADE | Owned by the wedding. |
 | `expense_payments.(expense_id, currency)` | CASCADE | A payment has no meaning without its expense (only reached on force delete). |
 | `revenues.(wedding_id, category_id)`, `expenses.(wedding_id, category_id)` | RESTRICT | Deleting a category must never delete financial records. |
 | `weddings.user_id` | RESTRICT | Account removal must go through the wedding delete action, never a silent cascade. |

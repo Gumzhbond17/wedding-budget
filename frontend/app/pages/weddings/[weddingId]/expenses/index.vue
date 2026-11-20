@@ -13,6 +13,7 @@ definePageMeta({
 })
 
 const { t, d } = useI18n()
+const categoryName = useCategoryName()
 const api = useApi()
 const toast = useToast()
 const { weddingId } = useCurrentWedding()
@@ -180,7 +181,7 @@ async function confirmDelete(): Promise<void> {
           </p>
         </template>
         <template #category-cell="{ row }">
-          {{ row.original.category?.name }}
+          {{ categoryName(row.original.category?.name) }}
         </template>
         <template #status-cell="{ row }">
           <div class="flex flex-wrap gap-1">
@@ -261,7 +262,7 @@ async function confirmDelete(): Promise<void> {
                   {{ expense.description }}
                 </NuxtLink>
                 <p class="text-sm text-muted">
-                  {{ expense.category?.name }}<template v-if="expense.vendor_name">
+                  {{ categoryName(expense.category?.name) }}<template v-if="expense.vendor_name">
                     · {{ expense.vendor_name }}
                   </template>
                 </p>

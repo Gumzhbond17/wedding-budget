@@ -42,7 +42,7 @@ final class UpdateWedding
     {
         if ($wedding->hasFinancialRecords()) {
             throw ValidationException::withMessages([
-                'base_currency' => __('The base currency cannot change once revenues or expenses exist (including deleted ones).'),
+                'base_currency' => __('The base currency cannot change once revenues, expenses or gift envelopes exist (including deleted ones).'),
             ]);
         }
 
